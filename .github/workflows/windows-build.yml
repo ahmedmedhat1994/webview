@@ -18,8 +18,9 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.27.4'
           channel: 'stable'
+          cache: true
 
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
@@ -32,11 +33,11 @@ jobs:
 
       - name: Create ZIP archive
         run: |
-          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath windows-release.zip
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath VopecsPOS-Windows.zip
 
       - name: Upload Windows Build
         uses: actions/upload-artifact@v4
         with:
-          name: windows-release
-          path: windows-release.zip
+          name: VopecsPOS-Windows
+          path: VopecsPOS-Windows.zip
           retention-days: 30
