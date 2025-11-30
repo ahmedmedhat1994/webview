@@ -104,6 +104,10 @@ namespace VopecsPOS.Windows
             {
                 _settings.LastVisitedUrl = WebView.CoreWebView2.Source;
             }
+
+            // Shutdown application when main window closes
+            LogService.Info("MainWindow closing, shutting down application");
+            Application.Current.Shutdown();
         }
 
         private void FabButton_Click(object sender, RoutedEventArgs e)

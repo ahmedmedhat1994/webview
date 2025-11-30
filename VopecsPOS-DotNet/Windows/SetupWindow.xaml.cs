@@ -6,6 +6,8 @@ namespace VopecsPOS.Windows
 {
     public partial class SetupWindow : Window
     {
+        private bool _navigatingToMain = false;
+
         public SetupWindow()
         {
             LogService.Info("SetupWindow constructor called");
@@ -13,6 +15,16 @@ namespace VopecsPOS.Windows
             UrlTextBox.Focus();
             UrlTextBox.CaretIndex = UrlTextBox.Text.Length;
             LogService.Info("SetupWindow initialized");
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            // Only shutdown if not navigating to main window
+            if (!_navigatingToMain)
+            {
+                LogService.Info("SetupWindow closing, shutting down application");
+                Application.Current.Shutdown();
+            }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -32,6 +44,9 @@ namespace VopecsPOS.Windows
                 LogService.Info("Saving URL...");
                 SettingsService.Instance.SavedUrl = url;
                 LogService.Info("URL saved successfully");
+
+                // Mark that we're navigating to main window
+                _navigatingToMain = true;
 
                 // Open main window
                 LogService.Info("Opening main window...");
