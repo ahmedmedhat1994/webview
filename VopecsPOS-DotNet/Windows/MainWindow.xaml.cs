@@ -12,18 +12,24 @@ namespace VopecsPOS.Windows
 
         public MainWindow()
         {
+            LogService.Info("MainWindow constructor called");
             InitializeComponent();
             _settings = SettingsService.Instance;
+            LogService.Info("MainWindow initialized");
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            LogService.Info("MainWindow Window_Loaded called");
             try
             {
                 // Initialize WebView2
+                LogService.Info("Initializing WebView2...");
                 await WebView.EnsureCoreWebView2Async();
+                LogService.Info("WebView2 initialized successfully");
 
                 // Configure WebView2 settings
+                LogService.Info("Configuring WebView2 settings...");
                 WebView.CoreWebView2.Settings.IsScriptEnabled = true;
                 WebView.CoreWebView2.Settings.IsWebMessageEnabled = true;
                 WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
@@ -34,15 +40,20 @@ namespace VopecsPOS.Windows
                 WebView.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
                 WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 WebView.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
+                LogService.Info("WebView2 events attached");
 
                 // Load the saved URL
                 var url = _settings.GetUrlToLoad();
+                LogService.Info($"URL to load: {url}");
+
                 if (!string.IsNullOrEmpty(url))
                 {
+                    LogService.Info($"Navigating to: {url}");
                     WebView.CoreWebView2.Navigate(url);
                 }
                 else
                 {
+                    LogService.Warning("No URL configured");
                     LoadingOverlay.Visibility = Visibility.Collapsed;
                     MessageBox.Show("No URL configured. Please configure a URL in settings.",
                         "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -50,25 +61,33 @@ namespace VopecsPOS.Windows
             }
             catch (Exception ex)
             {
+                LogService.Error("Failed to initialize WebView2", ex);
                 LoadingOverlay.Visibility = Visibility.Collapsed;
-                MessageBox.Show($"Failed to initialize WebView2: {ex.Message}\n\nPlease ensure WebView2 Runtime is installed.",
+                MessageBox.Show($"Failed to initialize WebView2: {ex.Message}\n\nPlease ensure WebView2 Runtime is installed.\n\nLog file: {LogService.GetLogFilePath()}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private void CoreWebView2_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
         {
+            LogService.Info($"Navigation starting: {e.Uri}");
             LoadingOverlay.Visibility = Visibility.Visible;
         }
 
         private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
+            LogService.Info($"Navigation completed. Success: {e.IsSuccess}");
             LoadingOverlay.Visibility = Visibility.Collapsed;
 
             // Save last visited URL
             if (e.IsSuccess && WebView.CoreWebView2.Source != null)
             {
                 _settings.LastVisitedUrl = WebView.CoreWebView2.Source;
+                LogService.Info($"Saved last visited URL: {WebView.CoreWebView2.Source}");
+            }
+            else if (!e.IsSuccess)
+            {
+                LogService.Error($"Navigation failed with error: {e.WebErrorStatus}");
             }
         }
 
