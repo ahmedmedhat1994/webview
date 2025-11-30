@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Vopecs POS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-color: #2196F3;
+      --primary-dark: #1976D2;
+      --error-color: #f44336;
+      --success-color: #4CAF50;
+      --bg-color: #f5f5f5;
+      --card-bg: #ffffff;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border-color: #e0e0e0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .section-title svg {
+      width: 20px;
+      height: 20px;
+      color: var(--primary-color);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: white;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    }
+
+    .option-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .option-item {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px 16px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .option-item:hover {
+      border-color: var(--primary-color);
+      background: rgba(33, 150, 243, 0.05);
+    }
+
+    .option-item.selected {
+      border-color: var(--primary-color);
+      background: rgba(33, 150, 243, 0.1);
+      color: var(--primary-color);
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .switch-row:last-child {
+      border-bottom: none;
+    }
+
+    .switch-label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .switch-label span {
+      font-weight: 500;
+    }
+
+    .switch-label small {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .switch {
+      position: relative;
+      width: 50px;
+      height: 28px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 28px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary-color);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-primary:disabled {
+      background: #bdbdbd;
+      cursor: not-allowed;
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--primary-color);
+      border: 2px solid var(--primary-color);
+    }
+
+    .btn-outline:hover {
+      background: rgba(33, 150, 243, 0.1);
+    }
+
+    .btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .printer-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    .printer-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .printer-item:last-child {
+      border-bottom: none;
+    }
+
+    .printer-item:hover {
+      background: rgba(33, 150, 243, 0.05);
+    }
+
+    .printer-item.selected {
+      background: rgba(33, 150, 243, 0.1);
+    }
+
+    .printer-item svg {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      color: var(--text-secondary);
+    }
+
+    .printer-item.selected svg {
+      color: var(--primary-color);
+    }
+
+    .printer-info {
+      flex: 1;
+    }
+
+    .printer-name {
+      font-weight: 500;
+    }
+
+    .printer-default {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .check-icon {
+      color: var(--primary-color);
+      display: none;
+    }
+
+    .printer-item.selected .check-icon {
+      display: block;
+    }
+
+    .error-message {
+      color: var(--error-color);
+      font-size: 13px;
+      margin-top: 6px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .success-message {
+      background: var(--success-color);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: none;
+      text-align: center;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 16px;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    /* RTL Support */
+    [dir="rtl"] {
+      direction: rtl;
+      text-align: right;
+    }
+
+    [dir="rtl"] .form-group input,
+    [dir="rtl"] .form-group select {
+      text-align: right;
+    }
+
+    [dir="rtl"] .printer-item svg {
+      margin-right: 0;
+      margin-left: 12px;
+    }
+
+    .loading {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ffffff;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .btn.loading-state .loading {
+      display: block;
+    }
+
+    .btn.loading-state .btn-text {
+      display: none;
+    }
+
+    .no-printers {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-secondary);
+    }
+
+    .no-printers svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .refresh-btn {
+      background: none;
+      border: none;
+      color: var(--primary-color);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: rgba(33, 150, 243, 0.1);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .btn-row .btn {
+      flex: 1;
+    }
+
+    .margins-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .margin-input {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .margin-input label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .margin-input input {
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .margin-input input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Vopecs POS</h1>
+      <p id="subtitle">Settings</p>
+    </div>
+
+    <div class="success-message" id="successMessage"></div>
+
+    <!-- Print Settings -->
+    <div class="card">
+      <div class="section-header">
+        <div class="section-title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span id="printTitle">Print Settings</span>
+        </div>
+        <button class="refresh-btn" onclick="loadPrinters()" title="Refresh">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Printer List -->
+      <div class="form-group">
+        <label id="printerLabel">Select Printer</label>
+        <div class="printer-list" id="printerList">
+          <div class="no-printers" id="noPrinters">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <p id="noPrintersText">No printers found</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Printer Type -->
+      <div class="form-group">
+        <label id="printerTypeLabel">Printer Type</label>
+        <div class="option-group" id="printerTypeGroup">
+          <div class="option-item selected" data-type="standard" onclick="selectPrinterType('standard')">
+            <span id="typeStandard">Standard</span>
+          </div>
+          <div class="option-item" data-type="thermal58" onclick="selectPrinterType('thermal58')">
+            <span id="typeThermal58">58mm Thermal</span>
+          </div>
+          <div class="option-item" data-type="thermal80" onclick="selectPrinterType('thermal80')">
+            <span id="typeThermal80">80mm Thermal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Silent Print Toggle -->
+      <div class="switch-row">
+        <div class="switch-label">
+          <span id="silentPrintLabel">Silent Print</span>
+          <small id="silentPrintDesc">Print without dialog</small>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="silentPrintToggle" onchange="toggleSilentPrint()">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <!-- Print Buttons -->
+      <div class="btn-row" style="margin-top: 16px;">
+        <button class="btn btn-outline" id="testPrintBtn" onclick="testPrint()">
+          <div class="loading"></div>
+          <span class="btn-text">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            <span id="testPrintText">Test Print</span>
+          </span>
+        </button>
+        <button class="btn btn-outline" id="previewPrintBtn" onclick="previewPrint()" style="border-color: #9C27B0; color: #9C27B0;">
+          <div class="loading"></div>
+          <span class="btn-text">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span id="previewPrintText">Preview</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- URL Settings -->
+    <div class="card">
+      <div class="section-title">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        <span id="urlTitle">POS URL</span>
+      </div>
+
+      <div class="form-group">
+        <label for="urlInput" id="urlLabel">Enter your POS URL</label>
+        <input
+          type="url"
+          id="urlInput"
+          placeholder="https://pos.example.com"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <div class="error-message" id="urlError">Please enter a valid URL</div>
+      </div>
+    </div>
+
+    <!-- Language Settings -->
+    <div class="card">
+      <div class="section-title">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <span id="langTitle">Language</span>
+      </div>
+
+      <div class="option-group">
+        <div class="option-item selected" data-lang="en" onclick="selectLanguage('en')">
+          English
+        </div>
+        <div class="option-item" data-lang="ar" onclick="selectLanguage('ar')">
+          العربية
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <button class="btn btn-primary" id="saveBtn" onclick="saveSettings()">
+      <div class="loading"></div>
+      <span class="btn-text">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span id="saveBtnText">Save & Continue</span>
+      </span>
+    </button>
+
+    <div class="footer">
+      Vopecs POS v1.0.0
+    </div>
+  </div>
+
+  <script>
+    // Translations
+    const translations = {
+      en: {
+        subtitle: 'Settings',
+        printTitle: 'Print Settings',
+        printerLabel: 'Select Printer',
+        noPrintersText: 'No printers found',
+        printerTypeLabel: 'Printer Type',
+        typeStandard: 'Standard',
+        typeThermal58: '58mm Thermal',
+        typeThermal80: '80mm Thermal',
+        silentPrintLabel: 'Silent Print',
+        silentPrintDesc: 'Print without dialog',
+        testPrintText: 'Test Print',
+        previewPrintText: 'Preview',
+        urlTitle: 'POS URL',
+        urlLabel: 'Enter your POS URL',
+        urlPlaceholder: 'https://pos.example.com',
+        urlError: 'Please enter a valid URL',
+        urlRequired: 'URL is required',
+        langTitle: 'Language',
+        saveBtn: 'Save & Continue',
+        saving: 'Saving...',
+        saved: 'Settings saved successfully!',
+        printSuccess: 'Test print sent!',
+        printError: 'Print failed'
+      },
+      ar: {
+        subtitle: 'الإعدادات',
+        printTitle: 'إعدادات الطباعة',
+        printerLabel: 'اختر الطابعة',
+        noPrintersText: 'لم يتم العثور على طابعات',
+        printerTypeLabel: 'نوع الطابعة',
+        typeStandard: 'عادية',
+        typeThermal58: 'حرارية 58مم',
+        typeThermal80: 'حرارية 80مم',
+        silentPrintLabel: 'طباعة صامتة',
+        silentPrintDesc: 'طباعة بدون نافذة',
+        testPrintText: 'طباعة تجريبية',
+        previewPrintText: 'معاينة',
+        urlTitle: 'رابط نقطة البيع',
+        urlLabel: 'أدخل رابط نقطة البيع',
+        urlPlaceholder: 'https://pos.example.com',
+        urlError: 'الرجاء إدخال رابط صحيح',
+        urlRequired: 'الرابط مطلوب',
+        langTitle: 'اللغة',
+        saveBtn: 'حفظ ومتابعة',
+        saving: 'جاري الحفظ...',
+        saved: 'تم حفظ الإعدادات بنجاح!',
+        printSuccess: 'تم إرسال الطباعة التجريبية!',
+        printError: 'فشلت الطباعة'
+      }
+    };
+
+    let currentLang = 'en';
+    let selectedPrinter = '';
+    let selectedPrinterType = 'standard';
+    let printers = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const settings = await window.electronAPI.getSettings();
+
+        if (settings.url) {
+          document.getElementById('urlInput').value = settings.url;
+        }
+        if (settings.language) {
+          selectLanguage(settings.language);
+        }
+        if (settings.printerName) {
+          selectedPrinter = settings.printerName;
+        }
+        if (settings.printerType) {
+          selectPrinterType(settings.printerType);
+        }
+        if (settings.silentPrint) {
+          document.getElementById('silentPrintToggle').checked = settings.silentPrint;
+        }
+
+        await loadPrinters();
+      } catch (e) {
+        console.error('Error loading settings:', e);
+      }
+    });
+
+    async function loadPrinters() {
+      try {
+        printers = await window.electronAPI.getPrinters();
+        renderPrinterList();
+      } catch (e) {
+        console.error('Error loading printers:', e);
+      }
+    }
+
+    function renderPrinterList() {
+      const list = document.getElementById('printerList');
+      const noPrinters = document.getElementById('noPrinters');
+
+      if (!printers || printers.length === 0) {
+        noPrinters.style.display = 'block';
+        list.innerHTML = '';
+        list.appendChild(noPrinters);
+        return;
+      }
+
+      noPrinters.style.display = 'none';
+      list.innerHTML = printers.map(printer => `
+        <div class="printer-item ${printer.name === selectedPrinter ? 'selected' : ''}" onclick="selectPrinter('${printer.name.replace(/'/g, "\\'")}')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <div class="printer-info">
+            <div class="printer-name">${printer.name}</div>
+            ${printer.isDefault ? '<div class="printer-default">Default</div>' : ''}
+          </div>
+          <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+      `).join('');
+    }
+
+    function selectPrinter(name) {
+      selectedPrinter = name;
+      renderPrinterList();
+      window.electronAPI.saveSettings({ printerName: name });
+    }
+
+    function selectPrinterType(type) {
+      selectedPrinterType = type;
+      document.querySelectorAll('#printerTypeGroup .option-item').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.type === type);
+      });
+      window.electronAPI.saveSettings({ printerType: type });
+    }
+
+    function toggleSilentPrint() {
+      const checked = document.getElementById('silentPrintToggle').checked;
+      window.electronAPI.saveSettings({ silentPrint: checked });
+    }
+
+    async function testPrint() {
+      const btn = document.getElementById('testPrintBtn');
+      btn.classList.add('loading-state');
+      btn.disabled = true;
+
+      try {
+        const success = await window.electronAPI.testPrint();
+        const t = translations[currentLang];
+        showMessage(success ? t.printSuccess : t.printError, !success);
+      } catch (e) {
+        console.error('Test print error:', e);
+        showMessage(translations[currentLang].printError, true);
+      } finally {
+        btn.classList.remove('loading-state');
+        btn.disabled = false;
+      }
+    }
+
+    async function previewPrint() {
+      const btn = document.getElementById('previewPrintBtn');
+      btn.classList.add('loading-state');
+      btn.disabled = true;
+
+      try {
+        // Sample invoice HTML for preview
+        const sampleHtml = `
+          <div id="invoice-POS">
+            <div class="info">
+              <h2>Vopecs POS</h2>
+              <p>فاتورة تجريبية - Sample Invoice</p>
+            </div>
+            <table class="table_data">
+              <tr><td>منتج 1 - Product 1</td><td>10.00</td></tr>
+              <tr><td>منتج 2 - Product 2</td><td>25.50</td></tr>
+              <tr><td>منتج 3 - Product 3</td><td>15.00</td></tr>
+              <tr class="total"><td><strong>الإجمالي - Total</strong></td><td><strong>50.50</strong></td></tr>
+            </table>
+            <div id="legalcopy">
+              <p class="legal">شكراً لزيارتكم - Thank you!</p>
+            </div>
+          </div>
+        `;
+        await window.electronAPI.printPreview(sampleHtml);
+      } catch (e) {
+        console.error('Preview error:', e);
+      } finally {
+        btn.classList.remove('loading-state');
+        btn.disabled = false;
+      }
+    }
+
+    function selectLanguage(lang) {
+      currentLang = lang;
+
+      // Update language options UI
+      document.querySelectorAll('.option-group .option-item[data-lang]').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.lang === lang);
+      });
+
+      // Update direction
+      document.body.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+      // Update translations
+      const t = translations[lang];
+      document.getElementById('subtitle').textContent = t.subtitle;
+      document.getElementById('printTitle').textContent = t.printTitle;
+      document.getElementById('printerLabel').textContent = t.printerLabel;
+      document.getElementById('noPrintersText').textContent = t.noPrintersText;
+      document.getElementById('printerTypeLabel').textContent = t.printerTypeLabel;
+      document.getElementById('typeStandard').textContent = t.typeStandard;
+      document.getElementById('typeThermal58').textContent = t.typeThermal58;
+      document.getElementById('typeThermal80').textContent = t.typeThermal80;
+      document.getElementById('silentPrintLabel').textContent = t.silentPrintLabel;
+      document.getElementById('silentPrintDesc').textContent = t.silentPrintDesc;
+      document.getElementById('testPrintText').textContent = t.testPrintText;
+      document.getElementById('previewPrintText').textContent = t.previewPrintText;
+      document.getElementById('urlTitle').textContent = t.urlTitle;
+      document.getElementById('urlLabel').textContent = t.urlLabel;
+      document.getElementById('urlInput').placeholder = t.urlPlaceholder;
+      document.getElementById('urlError').textContent = t.urlError;
+      document.getElementById('langTitle').textContent = t.langTitle;
+      document.getElementById('saveBtnText').textContent = t.saveBtn;
+    }
+
+    function isValidUrl(string) {
+      try {
+        const url = new URL(string);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      } catch (_) {
+        try {
+          const url = new URL('https://' + string);
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+    }
+
+    async function saveSettings() {
+      const urlInput = document.getElementById('urlInput');
+      const saveBtn = document.getElementById('saveBtn');
+      const urlError = document.getElementById('urlError');
+      const successMessage = document.getElementById('successMessage');
+      const t = translations[currentLang];
+
+      // Hide previous messages
+      urlError.classList.remove('show');
+      successMessage.classList.remove('show');
+
+      // Validate URL
+      let url = urlInput.value.trim();
+      if (!url) {
+        urlError.textContent = t.urlRequired;
+        urlError.classList.add('show');
+        urlInput.focus();
+        return;
+      }
+
+      if (!isValidUrl(url)) {
+        urlError.textContent = t.urlError;
+        urlError.classList.add('show');
+        urlInput.focus();
+        return;
+      }
+
+      // Normalize URL
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+
+      // Show loading state
+      saveBtn.classList.add('loading-state');
+      saveBtn.disabled = true;
+
+      try {
+        // Save settings
+        await window.electronAPI.saveSettings({
+          url: url,
+          language: currentLang
+        });
+
+        // Show success
+        showMessage(t.saved, false);
+
+        // Load webview
+        setTimeout(async () => {
+          await window.electronAPI.loadWebView();
+        }, 500);
+
+      } catch (e) {
+        console.error('Error saving settings:', e);
+        urlError.textContent = 'Error saving settings';
+        urlError.classList.add('show');
+      } finally {
+        saveBtn.classList.remove('loading-state');
+        saveBtn.disabled = false;
+      }
+    }
+
+    function showMessage(message, isError) {
+      const successMessage = document.getElementById('successMessage');
+      successMessage.textContent = message;
+      successMessage.style.background = isError ? '#f44336' : '#4CAF50';
+      successMessage.classList.add('show');
+      setTimeout(() => {
+        successMessage.classList.remove('show');
+      }, 3000);
+    }
+
+    // Enter key to save
+    document.getElementById('urlInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        saveSettings();
+      }
+    });
+  </script>
+</body>
+</html>

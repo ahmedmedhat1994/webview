@@ -83,7 +83,10 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
       final url = _storageService!.getUrlToLoad();
       _homeUrl = _storageService!.getSavedUrl() ?? '';
 
+      debugPrint('WebView URL to load: $url');
+
       if (url == null || url.isEmpty) {
+        debugPrint('No URL found, showing error');
         if (mounted) setState(() => _hasError = true);
         return;
       }
@@ -438,6 +441,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
           initialUrlRequest: URLRequest(url: WebUri(_currentUrl)),
           initialSettings: _settings,
           onWebViewCreated: (controller) {
+            debugPrint('WebView created successfully');
             _controller = controller;
 
             // إضافة JavaScript handler للطباعة
@@ -456,6 +460,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
             );
           },
           onLoadStart: (controller, url) {
+            debugPrint('WebView load started: $url');
             setState(() {
               _isLoading = true;
               _hasError = false;
@@ -468,6 +473,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
             setState(() => _loadingProgress = progress);
           },
           onLoadStop: (controller, url) async {
+            debugPrint('WebView load stopped: $url');
             if (url != null) {
               _currentUrl = url.toString();
             }
@@ -496,12 +502,16 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
             });
           },
           onReceivedError: (controller, request, error) {
+            debugPrint('WebView error: ${error.description}');
             if (request.isForMainFrame ?? false) {
               setState(() {
                 _isLoading = false;
                 _hasError = true;
               });
             }
+          },
+          onConsoleMessage: (controller, consoleMessage) {
+            debugPrint('WebView Console: ${consoleMessage.message}');
           },
           shouldOverrideUrlLoading: (controller, navigationAction) async {
             return NavigationActionPolicy.ALLOW;

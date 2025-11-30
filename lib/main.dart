@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'app.dart';
 import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
@@ -19,6 +20,11 @@ void main() async {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+  }
+
+  // Initialize WebView for Windows
+  if (Platform.isWindows) {
+    await InAppWebViewController.setWebContentsDebuggingEnabled(true);
   }
 
   // Initialize window manager for desktop
