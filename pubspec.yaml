@@ -1,0 +1,45 @@
+name: vopecs_pos
+description: "Multi-Platform POS WebView App"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # WebView (supports Android, iOS, macOS, Windows, Web)
+  flutter_inappwebview: ^6.1.5
+
+  # Local Storage
+  shared_preferences: ^2.3.3
+
+  # Open external links
+  url_launcher: ^6.3.1
+
+  # Connectivity check
+  connectivity_plus: ^6.1.0
+
+  # Window management (Desktop)
+  window_manager: ^0.4.3
+
+  # State Management
+  provider: ^6.1.2
+
+  # Printing
+  printing: ^5.13.4
+  pdf: ^3.11.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
