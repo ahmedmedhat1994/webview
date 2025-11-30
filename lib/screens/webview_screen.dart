@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../core/localization/app_localizations.dart';
@@ -29,13 +30,13 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
 
   StreamSubscription<bool>? _connectivitySubscription;
 
-  final InAppWebViewSettings _settings = InAppWebViewSettings(
+  InAppWebViewSettings get _settings => InAppWebViewSettings(
     useShouldOverrideUrlLoading: true,
     mediaPlaybackRequiresUserGesture: false,
     javaScriptEnabled: true,
     javaScriptCanOpenWindowsAutomatically: true,
     supportZoom: true,
-    allowsInlineMediaPlayback: true,
+    allowsInlineMediaPlayback: !Platform.isWindows,
     iframeAllowFullscreen: true,
   );
 
@@ -71,26 +72,35 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
   }
 
   Future<void> _initServices() async {
-    _storageService = await UrlStorageService.getInstance();
+    try {
+      _storageService = await UrlStorageService.getInstance();
 
-    // مسح الـ cache عند فتح التطبيق
-    await _clearCache();
+      // مسح الـ cache عند فتح التطبيق (تخطي على Windows لتجنب المشاكل)
+      if (!Platform.isWindows) {
+        await _clearCache();
+      }
 
-    final url = _storageService!.getUrlToLoad();
-    _homeUrl = _storageService!.getSavedUrl() ?? '';
+      final url = _storageService!.getUrlToLoad();
+      _homeUrl = _storageService!.getSavedUrl() ?? '';
 
-    if (url == null || url.isEmpty) {
-      setState(() => _hasError = true);
-      return;
+      if (url == null || url.isEmpty) {
+        if (mounted) setState(() => _hasError = true);
+        return;
+      }
+
+      _currentUrl = url;
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Error initializing services: $e');
+      if (mounted) setState(() => _hasError = true);
     }
-
-    _currentUrl = url;
-    setState(() {});
   }
 
   /// مسح cache الـ WebView
   Future<void> _clearCache() async {
     try {
+      // تخطي على Windows لأنها قد تسبب مشاكل
+      if (Platform.isWindows) return;
       await InAppWebViewController.clearAllCache();
       debugPrint('WebView cache cleared');
     } catch (e) {
