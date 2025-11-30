@@ -46,9 +46,6 @@ namespace VopecsPOS.Windows
                 WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 WebView.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
 
-                // Handle print requests for silent printing
-                WebView.CoreWebView2.PrintStarted += CoreWebView2_PrintStarted;
-
                 LogService.Info("WebView2 events attached");
 
                 // Inject JavaScript for touch scrolling fix
@@ -148,11 +145,6 @@ namespace VopecsPOS.Windows
                 // Fallback to normal print dialog
                 WebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
             }
-        }
-
-        private void CoreWebView2_PrintStarted(object? sender, object e)
-        {
-            LogService.Info("Print started");
         }
 
         private void CoreWebView2_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
