@@ -564,7 +564,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           borderRadius: BorderRadius.circular(12),
           color: isSelected
-              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+              ? theme.colorScheme.primaryContainer.withOpacity(0.3)
               : null,
         ),
         child: Row(

@@ -345,7 +345,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
         FloatingActionButton.small(
           onPressed: _toggleFab,
           tooltip: context.tr('menu'),
-          backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.95),
+          backgroundColor: theme.colorScheme.primaryContainer.withOpacity(0.95),
           child: AnimatedRotation(
             turns: _isFabExpanded ? 0.125 : 0,
             duration: const Duration(milliseconds: 200),
@@ -374,11 +374,11 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withValues(alpha: 0.95),
+            color: theme.colorScheme.surface.withOpacity(0.95),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
+                color: Colors.black.withOpacity(0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -516,7 +516,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
         // مؤشر الطباعة المتطور
         if (_isPrinting)
           Container(
-            color: Colors.black.withValues(alpha: 0.7),
+            color: Colors.black.withOpacity(0.7),
             child: Center(
               child: Container(
                 margin: const EdgeInsets.all(32),
@@ -527,13 +527,13 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                     end: Alignment.bottomRight,
                     colors: [
                       Theme.of(context).colorScheme.surface,
-                      Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+                      Theme.of(context).colorScheme.surface.withOpacity(0.95),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                       blurRadius: 30,
                       spreadRadius: 5,
                     ),
@@ -546,7 +546,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -563,7 +563,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
                           minHeight: 6,
-                          backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
                           valueColor: AlwaysStoppedAnimation<Color>(
                             Theme.of(context).colorScheme.primary,
                           ),
@@ -583,7 +583,7 @@ class _WebViewScreenState extends State<WebViewScreen> with WidgetsBindingObserv
                     Text(
                       'Please wait...',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
                   ],
