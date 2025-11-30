@@ -5,61 +5,45 @@
         Height="400" Width="500"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent"
         ResizeMode="NoResize">
 
-    <Border CornerRadius="20" Background="White">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.3"/>
-        </Border.Effect>
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#1976D2" Offset="0"/>
+                <GradientStop Color="#1565C0" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
 
-        <Grid>
-            <!-- Background Gradient -->
-            <Border CornerRadius="20">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#1976D2" Offset="0"/>
-                        <GradientStop Color="#1565C0" Offset="1"/>
-                    </LinearGradientBrush>
-                </Border.Background>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <!-- Logo Icon -->
+            <Border Background="White" CornerRadius="20" Padding="20" Width="100" Height="100">
+                <Viewbox>
+                    <Canvas Width="24" Height="24">
+                        <Path Fill="#1976D2" Data="M17,2H7A2,2 0 0,0 5,4V6H19V4A2,2 0 0,0 17,2M19,7H5V22H19V7M16,11H13V14H16V11M12,14H8V11H12V14M16,19H13V15H16V19M12,19H8V15H12V19Z"/>
+                    </Canvas>
+                </Viewbox>
             </Border>
 
-            <!-- Content -->
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <!-- Logo Icon -->
-                <Border Background="White" CornerRadius="20" Padding="20" Width="100" Height="100">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="15" ShadowDepth="5" Opacity="0.2"/>
-                    </Border.Effect>
-                    <Viewbox>
-                        <Canvas Width="24" Height="24">
-                            <Path Fill="#1976D2" Data="M17,2H7A2,2 0 0,0 5,4V6H19V4A2,2 0 0,0 17,2M19,7H5V22H19V7M16,11H13V14H16V11M12,14H8V11H12V14M16,19H13V15H16V19M12,19H8V15H12V19Z"/>
-                        </Canvas>
-                    </Viewbox>
-                </Border>
+            <TextBlock Text="Vopecs POS"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       Foreground="White"
+                       Margin="0,30,0,0"
+                       HorizontalAlignment="Center"/>
 
-                <TextBlock Text="Vopecs POS"
-                           FontSize="32"
-                           FontWeight="Bold"
-                           Foreground="White"
-                           Margin="0,30,0,0"
-                           HorizontalAlignment="Center"/>
+            <TextBlock Text="Loading..."
+                       FontSize="14"
+                       Foreground="#B3E5FC"
+                       Margin="0,10,0,30"
+                       HorizontalAlignment="Center"/>
 
-                <TextBlock Text="Loading..."
-                           FontSize="14"
-                           Foreground="#B3E5FC"
-                           Margin="0,10,0,30"
-                           HorizontalAlignment="Center"/>
-
-                <!-- Loading Indicator -->
-                <ProgressBar IsIndeterminate="True"
-                             Width="200"
-                             Height="4"
-                             Background="#64B5F6"
-                             Foreground="White"
-                             BorderThickness="0"/>
-            </StackPanel>
-        </Grid>
-    </Border>
+            <ProgressBar IsIndeterminate="True"
+                         Width="200"
+                         Height="4"
+                         Background="#64B5F6"
+                         Foreground="White"
+                         BorderThickness="0"/>
+        </StackPanel>
+    </Grid>
 </Window>

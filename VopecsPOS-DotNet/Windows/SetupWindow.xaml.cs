@@ -1,6 +1,5 @@
 using System;
 using System.Windows;
-using System.Windows.Input;
 using VopecsPOS.Services;
 
 namespace VopecsPOS.Windows
@@ -9,27 +8,17 @@ namespace VopecsPOS.Windows
     {
         public SetupWindow()
         {
+            LogService.Info("SetupWindow constructor called");
             InitializeComponent();
             UrlTextBox.Focus();
             UrlTextBox.CaretIndex = UrlTextBox.Text.Length;
-        }
-
-        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                DragMove();
-            }
-        }
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
+            LogService.Info("SetupWindow initialized");
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             var url = UrlTextBox.Text.Trim();
+            LogService.Info($"Save button clicked. URL: {url}");
 
             // Validate URL
             if (!ValidateUrl(url))
@@ -37,15 +26,28 @@ namespace VopecsPOS.Windows
                 return;
             }
 
-            // Save URL
-            SettingsService.Instance.SavedUrl = url;
+            try
+            {
+                // Save URL
+                LogService.Info("Saving URL...");
+                SettingsService.Instance.SavedUrl = url;
+                LogService.Info("URL saved successfully");
 
-            // Open main window
-            var mainWindow = new MainWindow();
-            mainWindow.Show();
+                // Open main window
+                LogService.Info("Opening main window...");
+                var mainWindow = new MainWindow();
+                mainWindow.Show();
+                LogService.Info("Main window opened");
 
-            // Close setup window
-            Close();
+                // Close setup window
+                LogService.Info("Closing setup window...");
+                Close();
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Error in SaveButton_Click", ex);
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private bool ValidateUrl(string url)
@@ -76,11 +78,13 @@ namespace VopecsPOS.Windows
                 return false;
             }
 
+            LogService.Info("URL validation passed");
             return true;
         }
 
         private void ShowError(string message)
         {
+            LogService.Warning($"Validation error: {message}");
             ErrorText.Text = message;
             ErrorText.Visibility = Visibility.Visible;
         }
