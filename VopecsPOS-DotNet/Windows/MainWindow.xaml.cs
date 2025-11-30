@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
 using VopecsPOS.Services;
 
@@ -8,6 +9,9 @@ namespace VopecsPOS.Windows
     public partial class MainWindow : Window
     {
         private bool _isFabExpanded = false;
+        private bool _isFullScreen = false;
+        private WindowStyle _previousWindowStyle;
+        private WindowState _previousWindowState;
         private readonly SettingsService _settings;
 
         public MainWindow()
@@ -35,12 +39,42 @@ namespace VopecsPOS.Windows
                 WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
                 WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 WebView.CoreWebView2.Settings.AreDevToolsEnabled = true;
+                WebView.CoreWebView2.Settings.IsPinchZoomEnabled = true;
 
                 // Handle navigation events
                 WebView.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
                 WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 WebView.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
+
+                // Handle print requests for silent printing
+                WebView.CoreWebView2.PrintStarted += CoreWebView2_PrintStarted;
+
                 LogService.Info("WebView2 events attached");
+
+                // Inject JavaScript for touch scrolling fix
+                WebView.CoreWebView2.NavigationCompleted += async (s, args) =>
+                {
+                    if (args.IsSuccess)
+                    {
+                        await WebView.CoreWebView2.ExecuteScriptAsync(@"
+                            // Fix touch scrolling for all scrollable elements
+                            document.addEventListener('touchstart', function(e) {}, {passive: true});
+                            document.addEventListener('touchmove', function(e) {}, {passive: true});
+
+                            // Enable smooth scrolling
+                            document.documentElement.style.scrollBehavior = 'smooth';
+
+                            // Intercept print calls for silent printing
+                            window.originalPrint = window.print;
+                            window.print = function() {
+                                window.chrome.webview.postMessage({type: 'print'});
+                            };
+                        ");
+                    }
+                };
+
+                // Handle messages from JavaScript
+                WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
 
                 // Load the saved URL
                 var url = _settings.GetUrlToLoad();
@@ -66,6 +100,59 @@ namespace VopecsPOS.Windows
                 MessageBox.Show($"Failed to initialize WebView2: {ex.Message}\n\nPlease ensure WebView2 Runtime is installed.\n\nLog file: {LogService.GetLogFilePath()}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private async void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            try
+            {
+                var message = e.WebMessageAsJson;
+                LogService.Info($"WebMessage received: {message}");
+
+                if (message.Contains("\"type\":\"print\""))
+                {
+                    await PrintSilent();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Error handling web message", ex);
+            }
+        }
+
+        private async System.Threading.Tasks.Task PrintSilent()
+        {
+            try
+            {
+                LogService.Info("Starting silent print...");
+
+                var printSettings = WebView.CoreWebView2.Environment.CreatePrintSettings();
+                printSettings.ShouldPrintBackgrounds = true;
+                printSettings.ShouldPrintHeaderAndFooter = false;
+                printSettings.ShouldPrintSelectionOnly = false;
+
+                // Set margins to 0 to avoid cutting
+                printSettings.MarginTop = 0;
+                printSettings.MarginBottom = 0;
+                printSettings.MarginLeft = 0;
+                printSettings.MarginRight = 0;
+
+                // Print silently to default printer
+                var result = await WebView.CoreWebView2.PrintAsync(printSettings);
+
+                LogService.Info($"Silent print result: {result}");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Silent print error", ex);
+                // Fallback to normal print dialog
+                WebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
+            }
+        }
+
+        private void CoreWebView2_PrintStarted(object? sender, object e)
+        {
+            LogService.Info("Print started");
         }
 
         private void CoreWebView2_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
@@ -97,6 +184,63 @@ namespace VopecsPOS.Windows
             e.NewWindow = WebView.CoreWebView2;
         }
 
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            // When maximized, go to true fullscreen
+            if (WindowState == WindowState.Maximized && !_isFullScreen)
+            {
+                EnterFullScreen();
+            }
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            // F11 or Escape to toggle/exit fullscreen
+            if (e.Key == Key.F11)
+            {
+                if (_isFullScreen)
+                    ExitFullScreen();
+                else
+                    EnterFullScreen();
+            }
+            else if (e.Key == Key.Escape && _isFullScreen)
+            {
+                ExitFullScreen();
+            }
+        }
+
+        private void EnterFullScreen()
+        {
+            if (_isFullScreen) return;
+
+            LogService.Info("Entering fullscreen mode");
+            _isFullScreen = true;
+            _previousWindowStyle = WindowStyle;
+            _previousWindowState = WindowState;
+
+            WindowStyle = WindowStyle.None;
+            WindowState = WindowState.Normal; // Need to set Normal first
+            WindowState = WindowState.Maximized;
+            Topmost = true;
+
+            // Hide FAB in fullscreen? Optional
+            // FabPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void ExitFullScreen()
+        {
+            if (!_isFullScreen) return;
+
+            LogService.Info("Exiting fullscreen mode");
+            _isFullScreen = false;
+
+            Topmost = false;
+            WindowStyle = _previousWindowStyle;
+            WindowState = _previousWindowState;
+
+            // FabPanel.Visibility = Visibility.Visible;
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             // Save current URL before closing
@@ -123,6 +267,7 @@ namespace VopecsPOS.Windows
             var homeUrl = _settings.SavedUrl;
             if (!string.IsNullOrEmpty(homeUrl) && WebView.CoreWebView2 != null)
             {
+                LogService.Info($"Navigating to home: {homeUrl}");
                 WebView.CoreWebView2.Navigate(homeUrl);
             }
         }

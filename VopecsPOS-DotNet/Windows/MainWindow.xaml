@@ -8,7 +8,9 @@
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
         Loaded="Window_Loaded"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        StateChanged="Window_StateChanged"
+        KeyDown="Window_KeyDown">
 
     <Grid>
         <!-- WebView2 -->
@@ -34,86 +36,75 @@
             </StackPanel>
         </Border>
 
-        <!-- Floating Action Button -->
+        <!-- Floating Action Button - Flutter Style -->
         <StackPanel x:Name="FabPanel"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
-                    Margin="0,0,20,20">
+                    Margin="0,0,16,16">
 
             <!-- Expanded Menu -->
             <StackPanel x:Name="FabMenu" Visibility="Collapsed">
-                <!-- Home Button -->
+                <!-- Home Button with Icon -->
                 <Button x:Name="HomeButton"
-                        Content="🏠 Home"
                         Click="HomeButton_Click"
-                        Background="White"
-                        Foreground="#333333"
-                        FontSize="13"
-                        Padding="15,10"
-                        Margin="0,0,0,8"
                         Cursor="Hand"
-                        BorderThickness="0">
+                        Margin="0,0,0,8">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}"
-                                    CornerRadius="20"
-                                    Padding="{TemplateBinding Padding}">
+                            <Border Background="#F5F5F5" CornerRadius="24" Padding="12,8">
                                 <Border.Effect>
-                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
+                                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
                                 </Border.Effect>
-                                <ContentPresenter HorizontalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Home" FontSize="13" FontWeight="Medium"
+                                               Foreground="#333333" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Background="#E3F2FD" CornerRadius="15" Width="30" Height="30">
+                                        <TextBlock Text="🏠" FontSize="14"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
                             </Border>
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
 
-                <!-- Settings Button -->
+                <!-- Settings Button with Icon -->
                 <Button x:Name="SettingsButton"
-                        Content="⚙️ Settings"
                         Click="SettingsButton_Click"
-                        Background="White"
-                        Foreground="#333333"
-                        FontSize="13"
-                        Padding="15,10"
-                        Margin="0,0,0,8"
                         Cursor="Hand"
-                        BorderThickness="0">
+                        Margin="0,0,0,12">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}"
-                                    CornerRadius="20"
-                                    Padding="{TemplateBinding Padding}">
+                            <Border Background="#F5F5F5" CornerRadius="24" Padding="12,8">
                                 <Border.Effect>
-                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
+                                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
                                 </Border.Effect>
-                                <ContentPresenter HorizontalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Settings" FontSize="13" FontWeight="Medium"
+                                               Foreground="#333333" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Background="#E3F2FD" CornerRadius="15" Width="30" Height="30">
+                                        <TextBlock Text="⚙️" FontSize="14"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
                             </Border>
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
             </StackPanel>
 
-            <!-- Main FAB -->
+            <!-- Main FAB - Small like Flutter -->
             <Button x:Name="FabButton"
-                    Content="☰"
                     Click="FabButton_Click"
-                    Width="50" Height="50"
-                    FontSize="20"
-                    Cursor="Hand"
-                    BorderThickness="0">
+                    Cursor="Hand">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="#1976D2"
-                                CornerRadius="25"
-                                Width="50" Height="50">
+                        <Border x:Name="FabBorder" Background="#E3F2FD" CornerRadius="20" Width="40" Height="40">
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="15" ShadowDepth="3" Opacity="0.3"/>
+                                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
                             </Border.Effect>
-                            <TextBlock Text="{TemplateBinding Content}"
-                                       Foreground="White"
-                                       FontSize="20"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="FabIcon" Text="☰" Foreground="#1976D2" FontSize="18"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </ControlTemplate>
                 </Button.Template>
