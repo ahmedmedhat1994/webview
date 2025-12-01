@@ -132,7 +132,8 @@ namespace VopecsPOS.Windows
         {
             try
             {
-                LogService.Info("Starting silent print...");
+                var scale = _settings.PrintScale;
+                LogService.Info($"Starting silent print with scale {scale}%...");
 
                 // Create print settings
                 var printSettings = WebView.CoreWebView2.Environment.CreatePrintSettings();
@@ -146,8 +147,8 @@ namespace VopecsPOS.Windows
                 printSettings.MarginLeft = 0;
                 printSettings.MarginRight = 0;
 
-                // Scale to 95% to avoid cutting
-                printSettings.ScaleFactor = 0.95;
+                // Use scale from settings (convert percentage to decimal)
+                printSettings.ScaleFactor = scale / 100.0;
 
                 // Print silently to default printer
                 var result = await WebView.CoreWebView2.PrintAsync(printSettings);
@@ -298,6 +299,28 @@ namespace VopecsPOS.Windows
             WindowState = _previousWindowState;
         }
 
+        private void Window_LocationChanged(object? sender, EventArgs e)
+        {
+            // Update popup position when window moves
+            UpdatePopupPosition();
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // Update popup position when window resizes
+            UpdatePopupPosition();
+        }
+
+        private void UpdatePopupPosition()
+        {
+            if (FabPopup.IsOpen)
+            {
+                // Force popup to recalculate position
+                FabPopup.IsOpen = false;
+                FabPopup.IsOpen = true;
+            }
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             // Save current URL before closing
@@ -333,17 +356,26 @@ namespace VopecsPOS.Windows
             CloseFabMenu();
 
             var currentUrl = _settings.SavedUrl ?? "https://";
-            var dialog = new SettingsDialog(currentUrl);
+            var currentScale = _settings.PrintScale;
+            var dialog = new SettingsDialog(currentUrl, currentScale);
             dialog.Owner = this;
 
-            if (dialog.ShowDialog() == true && !string.IsNullOrEmpty(dialog.NewUrl))
+            if (dialog.ShowDialog() == true)
             {
-                LogService.Info($"Changing URL to: {dialog.NewUrl}");
-                _settings.SavedUrl = dialog.NewUrl;
+                // Save print scale
+                _settings.PrintScale = dialog.NewPrintScale;
+                LogService.Info($"Print scale set to: {dialog.NewPrintScale}%");
 
-                if (WebView.CoreWebView2 != null)
+                // Save and navigate to URL if changed
+                if (!string.IsNullOrEmpty(dialog.NewUrl) && dialog.NewUrl != currentUrl)
                 {
-                    WebView.CoreWebView2.Navigate(dialog.NewUrl);
+                    LogService.Info($"Changing URL to: {dialog.NewUrl}");
+                    _settings.SavedUrl = dialog.NewUrl;
+
+                    if (WebView.CoreWebView2 != null)
+                    {
+                        WebView.CoreWebView2.Navigate(dialog.NewUrl);
+                    }
                 }
             }
         }

@@ -1,18 +1,30 @@
 using System;
 using System.Windows;
+using VopecsPOS.Services;
 
 namespace VopecsPOS.Windows
 {
     public partial class SettingsDialog : Window
     {
         public string? NewUrl { get; private set; }
+        public int NewPrintScale { get; private set; }
 
-        public SettingsDialog(string currentUrl)
+        public SettingsDialog(string currentUrl, int currentPrintScale)
         {
             InitializeComponent();
             UrlTextBox.Text = currentUrl;
+            ScaleSlider.Value = currentPrintScale;
+            ScaleValueText.Text = $"{currentPrintScale}%";
             UrlTextBox.Focus();
             UrlTextBox.SelectAll();
+        }
+
+        private void ScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (ScaleValueText != null)
+            {
+                ScaleValueText.Text = $"{(int)ScaleSlider.Value}%";
+            }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -25,6 +37,7 @@ namespace VopecsPOS.Windows
             }
 
             NewUrl = url;
+            NewPrintScale = (int)ScaleSlider.Value;
             DialogResult = true;
             Close();
         }

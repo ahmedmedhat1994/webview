@@ -10,7 +10,9 @@
         Loaded="Window_Loaded"
         Closing="Window_Closing"
         StateChanged="Window_StateChanged"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown"
+        LocationChanged="Window_LocationChanged"
+        SizeChanged="Window_SizeChanged">
 
     <Grid>
         <!-- WebView2 -->
@@ -20,7 +22,8 @@
         <!-- Loading Overlay -->
         <Border x:Name="LoadingOverlay"
                 Background="#80000000"
-                Visibility="Visible">
+                Visibility="Visible"
+                Panel.ZIndex="100">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                 <ProgressBar IsIndeterminate="True"
                              Width="200"
@@ -36,80 +39,89 @@
             </StackPanel>
         </Border>
 
-        <!-- Floating Action Button - Flutter Style -->
-        <StackPanel x:Name="FabPanel"
-                    Panel.ZIndex="9999"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Margin="0,0,16,16">
+        <!-- FAB Anchor for Popup positioning -->
+        <Border x:Name="FabAnchor"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Width="1" Height="1"
+                Margin="0,0,16,16"/>
 
-            <!-- Expanded Menu -->
-            <StackPanel x:Name="FabMenu" Visibility="Collapsed">
-                <!-- Home Button with Icon -->
-                <Button x:Name="HomeButton"
-                        Click="HomeButton_Click"
-                        Cursor="Hand"
-                        Margin="0,0,0,8">
+        <!-- FAB Popup - renders on top of WebView2 -->
+        <Popup x:Name="FabPopup"
+               PlacementTarget="{Binding ElementName=FabAnchor}"
+               Placement="Left"
+               StaysOpen="True"
+               AllowsTransparency="True"
+               IsOpen="True">
+            <StackPanel x:Name="FabPanel">
+                <!-- Expanded Menu -->
+                <StackPanel x:Name="FabMenu" Visibility="Collapsed">
+                    <!-- Home Button with Icon -->
+                    <Button x:Name="HomeButton"
+                            Click="HomeButton_Click"
+                            Cursor="Hand"
+                            Margin="0,0,0,8">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="#F5F5F5" CornerRadius="24" Padding="12,8">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Home" FontSize="13" FontWeight="Medium"
+                                                   Foreground="#333333" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <Border Background="#E3F2FD" CornerRadius="15" Width="30" Height="30">
+                                            <TextBlock Text="🏠" FontSize="14"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+
+                    <!-- Settings Button with Icon -->
+                    <Button x:Name="SettingsButton"
+                            Click="SettingsButton_Click"
+                            Cursor="Hand"
+                            Margin="0,0,0,12">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="#F5F5F5" CornerRadius="24" Padding="12,8">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Settings" FontSize="13" FontWeight="Medium"
+                                                   Foreground="#333333" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <Border Background="#E3F2FD" CornerRadius="15" Width="30" Height="30">
+                                            <TextBlock Text="⚙️" FontSize="14"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+
+                <!-- Main FAB - Small like Flutter -->
+                <Button x:Name="FabButton"
+                        Click="FabButton_Click"
+                        Cursor="Hand">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border Background="#F5F5F5" CornerRadius="24" Padding="12,8">
+                            <Border x:Name="FabBorder" Background="#E3F2FD" CornerRadius="20" Width="40" Height="40">
                                 <Border.Effect>
-                                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
                                 </Border.Effect>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Home" FontSize="13" FontWeight="Medium"
-                                               Foreground="#333333" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <Border Background="#E3F2FD" CornerRadius="15" Width="30" Height="30">
-                                        <TextBlock Text="🏠" FontSize="14"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                </StackPanel>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-
-                <!-- Settings Button with Icon -->
-                <Button x:Name="SettingsButton"
-                        Click="SettingsButton_Click"
-                        Cursor="Hand"
-                        Margin="0,0,0,12">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="#F5F5F5" CornerRadius="24" Padding="12,8">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15"/>
-                                </Border.Effect>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Settings" FontSize="13" FontWeight="Medium"
-                                               Foreground="#333333" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <Border Background="#E3F2FD" CornerRadius="15" Width="30" Height="30">
-                                        <TextBlock Text="⚙️" FontSize="14"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                </StackPanel>
+                                <TextBlock x:Name="FabIcon" Text="☰" Foreground="#1976D2" FontSize="18"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
             </StackPanel>
-
-            <!-- Main FAB - Small like Flutter -->
-            <Button x:Name="FabButton"
-                    Click="FabButton_Click"
-                    Cursor="Hand">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="FabBorder" Background="#E3F2FD" CornerRadius="20" Width="40" Height="40">
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
-                            </Border.Effect>
-                            <TextBlock x:Name="FabIcon" Text="☰" Foreground="#1976D2" FontSize="18"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
-        </StackPanel>
+        </Popup>
     </Grid>
 </Window>

@@ -72,6 +72,16 @@ namespace VopecsPOS.Services
             }
         }
 
+        public int PrintScale
+        {
+            get => _settings.PrintScale > 0 ? _settings.PrintScale : 80;
+            set
+            {
+                _settings.PrintScale = value;
+                SaveSettings();
+            }
+        }
+
         public string GetUrlToLoad()
         {
             return LastVisitedUrl ?? SavedUrl ?? string.Empty;
@@ -119,5 +129,6 @@ namespace VopecsPOS.Services
         public string? SavedUrl { get; set; }
         public string? LastVisitedUrl { get; set; }
         public string? Language { get; set; }
+        public int PrintScale { get; set; } = 80;
     }
 }
