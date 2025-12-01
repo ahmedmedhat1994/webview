@@ -56,22 +56,91 @@ namespace VopecsPOS.Windows
                 WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
 
                 // Inject print interception script BEFORE any page scripts run
+                // This intercepts print calls from main window AND dynamically created iframes
                 await WebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(@"
                     (function() {
-                        // Override window.print immediately before any other scripts
-                        const originalPrint = window.print.bind(window);
-                        window.print = function() {
-                            console.log('VopecsPOS: window.print() intercepted!');
+                        // Store reference to postMessage
+                        const sendPrintMessage = () => {
                             if (window.chrome && window.chrome.webview) {
                                 window.chrome.webview.postMessage({type: 'print'});
-                            } else {
-                                originalPrint();
                             }
                         };
-                        console.log('VopecsPOS: Print interception installed at document creation');
+
+                        // Override window.print immediately
+                        const origPrint = window.print.bind(window);
+                        window.print = function() {
+                            console.log('VopecsPOS: window.print intercepted');
+                            sendPrintMessage();
+                        };
+
+                        // Intercept iframe.contentWindow.print by patching createElement
+                        const origCreateElement = document.createElement.bind(document);
+                        document.createElement = function(tagName) {
+                            const el = origCreateElement(tagName);
+                            if (tagName.toLowerCase() === 'iframe') {
+                                // Patch the iframe's contentWindow once it loads
+                                const origOnload = el.onload;
+                                Object.defineProperty(el, 'onload', {
+                                    set: function(fn) {
+                                        origOnload = fn;
+                                    },
+                                    get: function() {
+                                        return function() {
+                                            try {
+                                                if (el.contentWindow) {
+                                                    el.contentWindow.print = function() {
+                                                        console.log('VopecsPOS: iframe print intercepted');
+                                                        sendPrintMessage();
+                                                    };
+                                                }
+                                            } catch(e) {}
+                                            if (origOnload) origOnload.call(el);
+                                        };
+                                    }
+                                });
+
+                                // Also watch for document.write completion
+                                setTimeout(() => {
+                                    try {
+                                        if (el.contentWindow) {
+                                            el.contentWindow.print = function() {
+                                                console.log('VopecsPOS: iframe print intercepted (delayed)');
+                                                sendPrintMessage();
+                                            };
+                                        }
+                                    } catch(e) {}
+                                }, 100);
+                            }
+                            return el;
+                        };
+
+                        // Patch document.body.appendChild to catch iframes
+                        const origAppendChild = Node.prototype.appendChild;
+                        Node.prototype.appendChild = function(child) {
+                            const result = origAppendChild.call(this, child);
+                            if (child && child.tagName && child.tagName.toLowerCase() === 'iframe') {
+                                // Continuously try to patch for 1 second
+                                let attempts = 0;
+                                const patchInterval = setInterval(() => {
+                                    try {
+                                        if (child.contentWindow && child.contentWindow.print) {
+                                            child.contentWindow.print = function() {
+                                                console.log('VopecsPOS: iframe print intercepted (appendChild)');
+                                                sendPrintMessage();
+                                            };
+                                        }
+                                    } catch(e) {}
+                                    attempts++;
+                                    if (attempts > 20) clearInterval(patchInterval);
+                                }, 50);
+                            }
+                            return result;
+                        };
+
+                        console.log('VopecsPOS: Advanced print interception installed');
                     })();
                 ");
-                LogService.Info("Print interception script added to document creation");
+                LogService.Info("Advanced print interception script added");
 
                 LogService.Info("WebView2 events attached");
 
@@ -256,13 +325,12 @@ namespace VopecsPOS.Windows
                     _settings.LastVisitedUrl = WebView.CoreWebView2.Source;
                 }
 
-                // Inject JavaScript for touch scrolling fix and silent printing
+                // Inject JavaScript for touch scrolling fix only
+                // Print interception is now handled by WebView2 PrintRequested event
                 try
                 {
                     await WebView.CoreWebView2.ExecuteScriptAsync(@"
                         (function() {
-                            console.log('VopecsPOS: Injecting scripts...');
-
                             // Fix touch scrolling for all elements
                             var style = document.createElement('style');
                             style.textContent = '* { touch-action: manipulation; -ms-touch-action: manipulation; } ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #f1f1f1; } ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }';
@@ -277,73 +345,9 @@ namespace VopecsPOS.Windows
                                     el.style.webkitOverflowScrolling = 'touch';
                                 }
                             });
-
-                            // Function to intercept print in a window/frame
-                            function interceptPrint(win) {
-                                if (win._printIntercepted) return;
-                                win._printIntercepted = true;
-                                win._originalPrint = win.print;
-                                win.print = function() {
-                                    console.log('VopecsPOS: print() intercepted!');
-                                    if (window.chrome && window.chrome.webview) {
-                                        window.chrome.webview.postMessage({type: 'print'});
-                                    } else {
-                                        win._originalPrint();
-                                    }
-                                };
-                                console.log('VopecsPOS: print intercepted for window');
-                            }
-
-                            // Intercept print on main window
-                            interceptPrint(window);
-
-                            // Intercept print on all iframes
-                            function interceptIframes() {
-                                var iframes = document.querySelectorAll('iframe');
-                                iframes.forEach(function(iframe) {
-                                    try {
-                                        if (iframe.contentWindow) {
-                                            interceptPrint(iframe.contentWindow);
-                                        }
-                                    } catch(e) {}
-                                });
-                            }
-                            interceptIframes();
-
-                            // Watch for new iframes
-                            var observer = new MutationObserver(function(mutations) {
-                                interceptIframes();
-                            });
-                            observer.observe(document.body, { childList: true, subtree: true });
-
-                            // Also intercept Ctrl+P
-                            document.addEventListener('keydown', function(e) {
-                                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                                    console.log('VopecsPOS: Ctrl+P intercepted!');
-                                    e.preventDefault();
-                                    if (window.chrome && window.chrome.webview) {
-                                        window.chrome.webview.postMessage({type: 'print'});
-                                    }
-                                }
-                            }, true);
-
-                            // Intercept document.execCommand('print')
-                            var originalExecCommand = document.execCommand;
-                            document.execCommand = function(cmd) {
-                                if (cmd.toLowerCase() === 'print') {
-                                    console.log('VopecsPOS: execCommand print intercepted!');
-                                    if (window.chrome && window.chrome.webview) {
-                                        window.chrome.webview.postMessage({type: 'print'});
-                                    }
-                                    return true;
-                                }
-                                return originalExecCommand.apply(document, arguments);
-                            };
-
-                            console.log('VopecsPOS: Scripts injected successfully');
                         })();
                     ");
-                    LogService.Info("JavaScript injected successfully");
+                    LogService.Info("Touch scrolling fix injected");
                 }
                 catch (Exception ex)
                 {

@@ -11,6 +11,7 @@
     <Company>Vopecs</Company>
     <Product>Vopecs POS</Product>
     <Description>Vopecs Point of Sale Application</Description>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>
