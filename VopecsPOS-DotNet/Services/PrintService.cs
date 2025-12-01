@@ -9,7 +9,6 @@ namespace VopecsPOS.Services
     public class PrintService
     {
         private string? _imagePath;
-        private int _currentPage;
         private Image? _printImage;
         private string _paperSize = "80mm";
         private double _scale = 0.8;
@@ -24,7 +23,6 @@ namespace VopecsPOS.Services
             _imagePath = imagePath;
             _paperSize = paperSize;
             _scale = scale;
-            _currentPage = 0;
 
             return await Task.Run(() =>
             {
