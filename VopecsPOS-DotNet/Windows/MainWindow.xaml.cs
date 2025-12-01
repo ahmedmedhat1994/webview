@@ -130,62 +130,89 @@ namespace VopecsPOS.Windows
 
         private async System.Threading.Tasks.Task PrintSilent()
         {
-            string? imagePath = null;
+            string? pdfPath = null;
             try
             {
                 var scale = _settings.PrintScale;
                 var paperSize = _settings.PaperSize;
                 LogService.Info($"Starting silent print with paper={paperSize}, scale={scale}%...");
 
-                // Capture WebView content as image
-                imagePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"VopecsPOS_Print_{DateTime.Now:yyyyMMddHHmmss}.png");
+                // Create print settings with correct paper size
+                var printSettings = WebView.CoreWebView2.Environment.CreatePrintSettings();
+                printSettings.ShouldPrintBackgrounds = true;
+                printSettings.ShouldPrintHeaderAndFooter = false;
+                printSettings.ShouldPrintSelectionOnly = false;
+                printSettings.MarginTop = 0;
+                printSettings.MarginBottom = 0;
+                printSettings.MarginLeft = 0;
+                printSettings.MarginRight = 0;
 
-                using (var stream = new System.IO.FileStream(imagePath, System.IO.FileMode.Create))
+                // Set scale
+                double scaleFactor = (double)scale / 100.0;
+                printSettings.ScaleFactor = scaleFactor;
+
+                // Set page size based on paper selection (in inches)
+                switch (paperSize)
                 {
-                    await WebView.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
+                    case "58mm":
+                        printSettings.PageWidth = 2.28;  // 58mm
+                        printSettings.PageHeight = 11.0;
+                        break;
+                    case "80mm":
+                        printSettings.PageWidth = 3.15;  // 80mm
+                        printSettings.PageHeight = 11.0;
+                        break;
+                    case "A4":
+                        printSettings.PageWidth = 8.27;  // 210mm
+                        printSettings.PageHeight = 11.69; // 297mm
+                        break;
+                    default:
+                        printSettings.PageWidth = 3.15;  // 80mm default
+                        printSettings.PageHeight = 11.0;
+                        break;
                 }
 
-                LogService.Info($"Screenshot captured: {imagePath}");
+                LogService.Info($"Print settings: width={printSettings.PageWidth}, height={printSettings.PageHeight}, scale={scaleFactor}");
 
-                // Use PrintService for direct printing
-                var printService = new PrintService();
-                var scaleDecimal = (double)scale / 100.0;
+                // Get default printer
+                var printerName = new System.Drawing.Printing.PrinterSettings().PrinterName;
+                LogService.Info($"Default printer: {printerName}");
 
-                var result = await printService.PrintImageAsync(imagePath, paperSize, scaleDecimal);
+                // Set printer name for direct printing
+                printSettings.PrinterName = printerName;
 
-                if (result)
+                // Print directly without dialog
+                var result = await WebView.CoreWebView2.PrintAsync(printSettings);
+
+                LogService.Info($"Print result: {result}");
+
+                if (result == CoreWebView2PrintStatus.Succeeded)
                 {
                     LogService.Info("Silent print completed successfully");
                 }
+                else if (result == CoreWebView2PrintStatus.PrinterUnavailable)
+                {
+                    LogService.Error("Printer unavailable");
+                    MessageBox.Show("Printer is not available. Please check your printer connection.", "Print Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
                 else
                 {
-                    LogService.Warning("PrintService failed, trying fallback...");
-                    WebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
+                    LogService.Warning($"Print status: {result}");
                 }
             }
             catch (Exception ex)
             {
                 LogService.Error("Silent print error", ex);
-                // Fallback to print dialog
-                try
-                {
-                    WebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
-                }
-                catch
-                {
-                    // Ignore fallback errors
-                }
+                MessageBox.Show($"Print error: {ex.Message}", "Print Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
-                // Clean up temp file
-                if (imagePath != null && System.IO.File.Exists(imagePath))
+                // Clean up temp file if any
+                if (pdfPath != null && System.IO.File.Exists(pdfPath))
                 {
                     try
                     {
-                        await System.Threading.Tasks.Task.Delay(1000);
-                        System.IO.File.Delete(imagePath);
-                        LogService.Info("Temp image deleted");
+                        System.IO.File.Delete(pdfPath);
                     }
                     catch { }
                 }

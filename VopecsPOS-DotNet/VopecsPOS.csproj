@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>VopecsPOS</AssemblyName>
     <RootNamespace>VopecsPOS</RootNamespace>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <Company>Vopecs</Company>
     <Product>Vopecs POS</Product>
     <Description>Vopecs Point of Sale Application</Description>
