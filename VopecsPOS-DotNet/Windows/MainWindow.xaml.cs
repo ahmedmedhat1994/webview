@@ -226,6 +226,20 @@ namespace VopecsPOS.Windows
             {
                 LogService.Info("Starting HTML print with hidden WebView...");
 
+                // Get the base URL from settings
+                var baseUrl = _settings.SavedUrl ?? "https://pos.megacaresa.com";
+                var baseUri = new Uri(baseUrl);
+                var origin = $"{baseUri.Scheme}://{baseUri.Host}";
+
+                // Fix relative CSS/resource paths to absolute URLs
+                html = html.Replace("href=\"/css/", $"href=\"{origin}/css/");
+                html = html.Replace("href='/css/", $"href='{origin}/css/");
+                html = html.Replace("src=\"/images/", $"src=\"{origin}/images/");
+                html = html.Replace("src='/images/", $"src='{origin}/images/");
+                html = html.Replace("src=\"/", $"src=\"{origin}/");
+                html = html.Replace("src='/", $"src='{origin}/");
+                LogService.Info($"Fixed relative paths with base: {origin}");
+
                 // Create a temporary HTML file
                 var tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"print_{Guid.NewGuid()}.html");
                 await System.IO.File.WriteAllTextAsync(tempPath, html);
