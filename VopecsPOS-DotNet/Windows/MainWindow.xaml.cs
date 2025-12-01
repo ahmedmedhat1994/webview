@@ -180,10 +180,6 @@ namespace VopecsPOS.Windows
             }
         }
 
-        private string? _pendingPrintHtml = null;
-        private string? _returnUrl = null;
-        private bool _isPrintNavigation = false;
-
         private async void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             try
@@ -228,25 +224,132 @@ namespace VopecsPOS.Windows
         {
             try
             {
-                LogService.Info("Starting HTML print...");
+                LogService.Info("Starting HTML print with hidden WebView...");
 
-                // Store current URL to return to after printing
-                _returnUrl = WebView.CoreWebView2.Source;
-                _pendingPrintHtml = html;
-                _isPrintNavigation = true;
+                // Create a temporary HTML file
+                var tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"print_{Guid.NewGuid()}.html");
+                await System.IO.File.WriteAllTextAsync(tempPath, html);
+                LogService.Info($"Temp HTML file created: {tempPath}");
 
-                LogService.Info($"Current URL saved: {_returnUrl}");
+                // Create hidden WebView for printing
+                var hiddenWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
+                hiddenWebView.Visibility = Visibility.Collapsed;
+                hiddenWebView.Width = 0;
+                hiddenWebView.Height = 0;
 
-                // Navigate to HTML content
-                WebView.CoreWebView2.NavigateToString(html);
+                // Add to visual tree temporarily (required for WebView2 to work)
+                var mainGrid = (System.Windows.Controls.Grid)this.Content;
+                mainGrid.Children.Add(hiddenWebView);
 
-                // The actual print will happen in NavigationCompleted when _isPrintNavigation is true
+                try
+                {
+                    // Initialize hidden WebView
+                    await hiddenWebView.EnsureCoreWebView2Async();
+                    LogService.Info("Hidden WebView initialized");
+
+                    // Navigate to temp file
+                    var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+                    hiddenWebView.CoreWebView2.NavigationCompleted += async (s, args) =>
+                    {
+                        if (args.IsSuccess)
+                        {
+                            try
+                            {
+                                // Wait for content to render
+                                await System.Threading.Tasks.Task.Delay(500);
+
+                                // Print silently
+                                var printSettings = hiddenWebView.CoreWebView2.Environment.CreatePrintSettings();
+                                printSettings.ShouldPrintBackgrounds = true;
+                                printSettings.ShouldPrintHeaderAndFooter = false;
+                                printSettings.MarginTop = 0;
+                                printSettings.MarginBottom = 0;
+                                printSettings.MarginLeft = 0;
+                                printSettings.MarginRight = 0;
+
+                                // Set scale and paper size
+                                var scale = _settings.PrintScale;
+                                var paperSize = _settings.PaperSize;
+                                printSettings.ScaleFactor = (double)scale / 100.0;
+
+                                switch (paperSize)
+                                {
+                                    case "58mm":
+                                        printSettings.PageWidth = 2.28;
+                                        printSettings.PageHeight = 11.0;
+                                        break;
+                                    case "80mm":
+                                        printSettings.PageWidth = 3.15;
+                                        printSettings.PageHeight = 11.0;
+                                        break;
+                                    case "A4":
+                                        printSettings.PageWidth = 8.27;
+                                        printSettings.PageHeight = 11.69;
+                                        break;
+                                    default:
+                                        printSettings.PageWidth = 3.15;
+                                        printSettings.PageHeight = 11.0;
+                                        break;
+                                }
+
+                                // Get default printer
+                                var printerName = new System.Drawing.Printing.PrinterSettings().PrinterName;
+                                printSettings.PrinterName = printerName;
+                                LogService.Info($"Printing to: {printerName}");
+
+                                var result = await hiddenWebView.CoreWebView2.PrintAsync(printSettings);
+                                LogService.Info($"Hidden WebView print result: {result}");
+
+                                tcs.TrySetResult(result == CoreWebView2PrintStatus.Succeeded);
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.Error("Print error in hidden WebView", ex);
+                                tcs.TrySetResult(false);
+                            }
+                        }
+                        else
+                        {
+                            LogService.Error("Hidden WebView navigation failed");
+                            tcs.TrySetResult(false);
+                        }
+                    };
+
+                    hiddenWebView.CoreWebView2.Navigate($"file:///{tempPath.Replace("\\", "/")}");
+
+                    // Wait for print to complete (timeout 30 seconds)
+                    var completed = await System.Threading.Tasks.Task.WhenAny(
+                        tcs.Task,
+                        System.Threading.Tasks.Task.Delay(30000)
+                    );
+
+                    if (completed != tcs.Task)
+                    {
+                        LogService.Warning("Print timeout");
+                    }
+                    else if (tcs.Task.Result)
+                    {
+                        LogService.Info("Silent print from hidden WebView completed successfully");
+                    }
+                }
+                finally
+                {
+                    // Clean up
+                    mainGrid.Children.Remove(hiddenWebView);
+                    hiddenWebView.Dispose();
+
+                    // Delete temp file
+                    try
+                    {
+                        if (System.IO.File.Exists(tempPath))
+                            System.IO.File.Delete(tempPath);
+                    }
+                    catch { }
+                }
             }
             catch (Exception ex)
             {
                 LogService.Error("PrintHtmlContent error", ex);
-                _isPrintNavigation = false;
-                _pendingPrintHtml = null;
             }
         }
 
@@ -350,30 +453,6 @@ namespace VopecsPOS.Windows
         private async void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
             LogService.Info($"Navigation completed. Success: {e.IsSuccess}");
-
-            // Handle print navigation
-            if (_isPrintNavigation && e.IsSuccess)
-            {
-                LogService.Info("Print navigation completed, starting print...");
-                _isPrintNavigation = false;
-
-                // Small delay to ensure content is rendered
-                await System.Threading.Tasks.Task.Delay(300);
-
-                // Print the HTML content
-                await PrintSilent();
-
-                // Navigate back to original URL
-                if (!string.IsNullOrEmpty(_returnUrl))
-                {
-                    LogService.Info($"Returning to: {_returnUrl}");
-                    WebView.CoreWebView2.Navigate(_returnUrl);
-                    _returnUrl = null;
-                }
-
-                _pendingPrintHtml = null;
-                return;
-            }
 
             LoadingOverlay.Visibility = Visibility.Collapsed;
 
