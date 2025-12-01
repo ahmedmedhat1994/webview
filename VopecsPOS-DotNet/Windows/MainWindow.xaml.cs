@@ -85,7 +85,7 @@ namespace VopecsPOS.Windows
 
             // Auto-recovery: reload the page
             if (e.Reason == CoreWebView2ProcessFailedReason.Crashed ||
-                e.Reason == CoreWebView2ProcessFailedReason.RenderProcessExited)
+                e.Reason == CoreWebView2ProcessFailedReason.Unresponsive)
             {
                 LogService.Info("Attempting auto-recovery...");
                 await System.Threading.Tasks.Task.Delay(1000);
