@@ -32,46 +32,26 @@ namespace VopecsPOS.Windows
                 await WebView.EnsureCoreWebView2Async();
                 LogService.Info("WebView2 initialized successfully");
 
-                // Configure WebView2 settings
+                // Configure WebView2 settings for better performance
                 LogService.Info("Configuring WebView2 settings...");
                 WebView.CoreWebView2.Settings.IsScriptEnabled = true;
                 WebView.CoreWebView2.Settings.IsWebMessageEnabled = true;
-                WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
+                WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false; // Disable for performance
                 WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
-                WebView.CoreWebView2.Settings.AreDevToolsEnabled = true;
+                WebView.CoreWebView2.Settings.AreDevToolsEnabled = false; // Disable for performance
                 WebView.CoreWebView2.Settings.IsPinchZoomEnabled = true;
+                WebView.CoreWebView2.Settings.IsSwipeNavigationEnabled = false; // Disable for stability
 
                 // Handle navigation events
                 WebView.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
                 WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 WebView.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
+                WebView.CoreWebView2.ProcessFailed += CoreWebView2_ProcessFailed; // Auto-recovery
+
+                // Handle messages from JavaScript (for silent printing)
+                WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
 
                 LogService.Info("WebView2 events attached");
-
-                // Inject JavaScript for touch scrolling fix
-                WebView.CoreWebView2.NavigationCompleted += async (s, args) =>
-                {
-                    if (args.IsSuccess)
-                    {
-                        await WebView.CoreWebView2.ExecuteScriptAsync(@"
-                            // Fix touch scrolling for all scrollable elements
-                            document.addEventListener('touchstart', function(e) {}, {passive: true});
-                            document.addEventListener('touchmove', function(e) {}, {passive: true});
-
-                            // Enable smooth scrolling
-                            document.documentElement.style.scrollBehavior = 'smooth';
-
-                            // Intercept print calls for silent printing
-                            window.originalPrint = window.print;
-                            window.print = function() {
-                                window.chrome.webview.postMessage({type: 'print'});
-                            };
-                        ");
-                    }
-                };
-
-                // Handle messages from JavaScript
-                WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
 
                 // Load the saved URL
                 var url = _settings.GetUrlToLoad();
@@ -99,6 +79,33 @@ namespace VopecsPOS.Windows
             }
         }
 
+        private async void CoreWebView2_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
+        {
+            LogService.Error($"WebView2 process failed: {e.Reason}");
+
+            // Auto-recovery: reload the page
+            if (e.Reason == CoreWebView2ProcessFailedReason.Crashed ||
+                e.Reason == CoreWebView2ProcessFailedReason.RenderProcessExited)
+            {
+                LogService.Info("Attempting auto-recovery...");
+                await System.Threading.Tasks.Task.Delay(1000);
+
+                try
+                {
+                    var url = _settings.GetUrlToLoad();
+                    if (!string.IsNullOrEmpty(url))
+                    {
+                        WebView.CoreWebView2.Navigate(url);
+                        LogService.Info("Auto-recovery successful");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogService.Error("Auto-recovery failed", ex);
+                }
+            }
+        }
+
         private async void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             try
@@ -123,27 +130,43 @@ namespace VopecsPOS.Windows
             {
                 LogService.Info("Starting silent print...");
 
+                // Create print settings
                 var printSettings = WebView.CoreWebView2.Environment.CreatePrintSettings();
                 printSettings.ShouldPrintBackgrounds = true;
                 printSettings.ShouldPrintHeaderAndFooter = false;
                 printSettings.ShouldPrintSelectionOnly = false;
 
-                // Set margins to 0 to avoid cutting
+                // Set margins to minimum
                 printSettings.MarginTop = 0;
                 printSettings.MarginBottom = 0;
                 printSettings.MarginLeft = 0;
                 printSettings.MarginRight = 0;
 
+                // Scale to 95% to avoid cutting
+                printSettings.ScaleFactor = 0.95;
+
                 // Print silently to default printer
                 var result = await WebView.CoreWebView2.PrintAsync(printSettings);
 
                 LogService.Info($"Silent print result: {result}");
+
+                if (result != CoreWebView2PrintStatus.Succeeded)
+                {
+                    LogService.Warning($"Print may have issues: {result}");
+                }
             }
             catch (Exception ex)
             {
                 LogService.Error("Silent print error", ex);
-                // Fallback to normal print dialog
-                WebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
+                // Fallback to print dialog
+                try
+                {
+                    WebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
+                }
+                catch
+                {
+                    // Ignore fallback errors
+                }
             }
         }
 
@@ -153,18 +176,61 @@ namespace VopecsPOS.Windows
             LoadingOverlay.Visibility = Visibility.Visible;
         }
 
-        private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+        private async void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
             LogService.Info($"Navigation completed. Success: {e.IsSuccess}");
             LoadingOverlay.Visibility = Visibility.Collapsed;
 
-            // Save last visited URL
-            if (e.IsSuccess && WebView.CoreWebView2.Source != null)
+            if (e.IsSuccess)
             {
-                _settings.LastVisitedUrl = WebView.CoreWebView2.Source;
-                LogService.Info($"Saved last visited URL: {WebView.CoreWebView2.Source}");
+                // Save last visited URL
+                if (WebView.CoreWebView2.Source != null)
+                {
+                    _settings.LastVisitedUrl = WebView.CoreWebView2.Source;
+                }
+
+                // Inject JavaScript for touch scrolling fix and silent printing
+                try
+                {
+                    await WebView.CoreWebView2.ExecuteScriptAsync(@"
+                        (function() {
+                            // Fix touch scrolling for all elements
+                            var style = document.createElement('style');
+                            style.textContent = '* { touch-action: manipulation; -ms-touch-action: manipulation; } ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #f1f1f1; } ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }';
+                            document.head.appendChild(style);
+
+                            // Enable touch scrolling on all scrollable elements
+                            document.querySelectorAll('*').forEach(function(el) {
+                                var style = window.getComputedStyle(el);
+                                if (style.overflow === 'auto' || style.overflow === 'scroll' ||
+                                    style.overflowY === 'auto' || style.overflowY === 'scroll') {
+                                    el.style.touchAction = 'pan-y';
+                                    el.style.webkitOverflowScrolling = 'touch';
+                                }
+                            });
+
+                            // Intercept print calls for silent printing
+                            if (!window._printIntercepted) {
+                                window._printIntercepted = true;
+                                window._originalPrint = window.print;
+                                window.print = function() {
+                                    if (window.chrome && window.chrome.webview) {
+                                        window.chrome.webview.postMessage({type: 'print'});
+                                    } else {
+                                        window._originalPrint();
+                                    }
+                                };
+                            }
+                        })();
+                    ");
+                    LogService.Info("JavaScript injected successfully");
+                }
+                catch (Exception ex)
+                {
+                    LogService.Error("Failed to inject JavaScript", ex);
+                }
             }
-            else if (!e.IsSuccess)
+            else
             {
                 LogService.Error($"Navigation failed with error: {e.WebErrorStatus}");
             }
@@ -211,12 +277,9 @@ namespace VopecsPOS.Windows
             _previousWindowState = WindowState;
 
             WindowStyle = WindowStyle.None;
-            WindowState = WindowState.Normal; // Need to set Normal first
+            WindowState = WindowState.Normal;
             WindowState = WindowState.Maximized;
             Topmost = true;
-
-            // Hide FAB in fullscreen? Optional
-            // FabPanel.Visibility = Visibility.Collapsed;
         }
 
         private void ExitFullScreen()
@@ -229,8 +292,6 @@ namespace VopecsPOS.Windows
             Topmost = false;
             WindowStyle = _previousWindowStyle;
             WindowState = _previousWindowState;
-
-            // FabPanel.Visibility = Visibility.Visible;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -241,7 +302,6 @@ namespace VopecsPOS.Windows
                 _settings.LastVisitedUrl = WebView.CoreWebView2.Source;
             }
 
-            // Shutdown application when main window closes
             LogService.Info("MainWindow closing, shutting down application");
             Application.Current.Shutdown();
         }
@@ -276,14 +336,9 @@ namespace VopecsPOS.Windows
 
             if (result == MessageBoxResult.Yes)
             {
-                // Clear saved URL and restart
                 _settings.ClearAll();
-
-                // Open setup window
                 var setupWindow = new SetupWindow();
                 setupWindow.Show();
-
-                // Close this window
                 Close();
             }
         }
