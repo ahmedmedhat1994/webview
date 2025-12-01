@@ -56,6 +56,75 @@ namespace VopecsPOS.Windows
                 WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
                 LogService.Info("WebMessage handler registered for print interception");
 
+                // Inject iframe print interception script BEFORE any page scripts run
+                await WebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(@"
+                    (function() {
+                        // Function to send print message with HTML content
+                        const sendPrintMessage = (html) => {
+                            if (window.chrome && window.chrome.webview) {
+                                console.log('VopecsPOS: Sending iframe content for printing');
+                                window.chrome.webview.postMessage({type: 'print', html: html});
+                            }
+                        };
+
+                        // Patch appendChild to detect iframe additions
+                        const origAppendChild = Node.prototype.appendChild;
+                        Node.prototype.appendChild = function(child) {
+                            const result = origAppendChild.call(this, child);
+
+                            if (child && child.tagName && child.tagName.toLowerCase() === 'iframe') {
+                                console.log('VopecsPOS: Iframe detected, setting up print interception');
+
+                                // Continuously try to patch print for 2 seconds (iframe gets document.write)
+                                let attempts = 0;
+                                const patchInterval = setInterval(() => {
+                                    try {
+                                        if (child.contentWindow && typeof child.contentWindow.print === 'function') {
+                                            const origPrint = child.contentWindow.print.bind(child.contentWindow);
+                                            child.contentWindow.print = function() {
+                                                console.log('VopecsPOS: Iframe print() intercepted!');
+
+                                                // Get iframe content
+                                                let html = '';
+                                                try {
+                                                    const doc = child.contentWindow.document || child.contentDocument;
+                                                    if (doc && doc.documentElement) {
+                                                        html = doc.documentElement.outerHTML;
+                                                    }
+                                                } catch(e) {
+                                                    console.log('VopecsPOS: Could not get iframe content', e);
+                                                }
+
+                                                if (html) {
+                                                    sendPrintMessage(html);
+                                                } else {
+                                                    // Fallback to original print
+                                                    origPrint();
+                                                }
+                                            };
+                                            console.log('VopecsPOS: Iframe print patched successfully');
+                                        }
+                                    } catch(e) {}
+
+                                    attempts++;
+                                    if (attempts > 40) clearInterval(patchInterval); // 2 seconds max
+                                }, 50);
+                            }
+                            return result;
+                        };
+
+                        // Also override window.print for direct calls
+                        const origWindowPrint = window.print.bind(window);
+                        window.print = function() {
+                            console.log('VopecsPOS: window.print() intercepted');
+                            sendPrintMessage(document.documentElement.outerHTML);
+                        };
+
+                        console.log('VopecsPOS: Iframe print interception installed');
+                    })();
+                ");
+                LogService.Info("Iframe print interception script added");
+
                 LogService.Info("WebView2 events attached");
 
                 // Load the saved URL
