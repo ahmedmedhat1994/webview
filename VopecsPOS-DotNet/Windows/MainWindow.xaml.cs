@@ -243,6 +243,8 @@ namespace VopecsPOS.Windows
                 {
                     await WebView.CoreWebView2.ExecuteScriptAsync(@"
                         (function() {
+                            console.log('VopecsPOS: Injecting scripts...');
+
                             // Fix touch scrolling for all elements
                             var style = document.createElement('style');
                             style.textContent = '* { touch-action: manipulation; -ms-touch-action: manipulation; } ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #f1f1f1; } ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }';
@@ -250,26 +252,77 @@ namespace VopecsPOS.Windows
 
                             // Enable touch scrolling on all scrollable elements
                             document.querySelectorAll('*').forEach(function(el) {
-                                var style = window.getComputedStyle(el);
-                                if (style.overflow === 'auto' || style.overflow === 'scroll' ||
-                                    style.overflowY === 'auto' || style.overflowY === 'scroll') {
+                                var cs = window.getComputedStyle(el);
+                                if (cs.overflow === 'auto' || cs.overflow === 'scroll' ||
+                                    cs.overflowY === 'auto' || cs.overflowY === 'scroll') {
                                     el.style.touchAction = 'pan-y';
                                     el.style.webkitOverflowScrolling = 'touch';
                                 }
                             });
 
-                            // Intercept print calls for silent printing
-                            if (!window._printIntercepted) {
-                                window._printIntercepted = true;
-                                window._originalPrint = window.print;
-                                window.print = function() {
+                            // Function to intercept print in a window/frame
+                            function interceptPrint(win) {
+                                if (win._printIntercepted) return;
+                                win._printIntercepted = true;
+                                win._originalPrint = win.print;
+                                win.print = function() {
+                                    console.log('VopecsPOS: print() intercepted!');
                                     if (window.chrome && window.chrome.webview) {
                                         window.chrome.webview.postMessage({type: 'print'});
                                     } else {
-                                        window._originalPrint();
+                                        win._originalPrint();
                                     }
                                 };
+                                console.log('VopecsPOS: print intercepted for window');
                             }
+
+                            // Intercept print on main window
+                            interceptPrint(window);
+
+                            // Intercept print on all iframes
+                            function interceptIframes() {
+                                var iframes = document.querySelectorAll('iframe');
+                                iframes.forEach(function(iframe) {
+                                    try {
+                                        if (iframe.contentWindow) {
+                                            interceptPrint(iframe.contentWindow);
+                                        }
+                                    } catch(e) {}
+                                });
+                            }
+                            interceptIframes();
+
+                            // Watch for new iframes
+                            var observer = new MutationObserver(function(mutations) {
+                                interceptIframes();
+                            });
+                            observer.observe(document.body, { childList: true, subtree: true });
+
+                            // Also intercept Ctrl+P
+                            document.addEventListener('keydown', function(e) {
+                                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                                    console.log('VopecsPOS: Ctrl+P intercepted!');
+                                    e.preventDefault();
+                                    if (window.chrome && window.chrome.webview) {
+                                        window.chrome.webview.postMessage({type: 'print'});
+                                    }
+                                }
+                            }, true);
+
+                            // Intercept document.execCommand('print')
+                            var originalExecCommand = document.execCommand;
+                            document.execCommand = function(cmd) {
+                                if (cmd.toLowerCase() === 'print') {
+                                    console.log('VopecsPOS: execCommand print intercepted!');
+                                    if (window.chrome && window.chrome.webview) {
+                                        window.chrome.webview.postMessage({type: 'print'});
+                                    }
+                                    return true;
+                                }
+                                return originalExecCommand.apply(document, arguments);
+                            };
+
+                            console.log('VopecsPOS: Scripts injected successfully');
                         })();
                     ");
                     LogService.Info("JavaScript injected successfully");
@@ -407,6 +460,13 @@ namespace VopecsPOS.Windows
                 LogService.Info($"Navigating to home: {homeUrl}");
                 WebView.CoreWebView2.Navigate(homeUrl);
             }
+        }
+
+        private async void PrintButton_Click(object sender, RoutedEventArgs e)
+        {
+            CloseFabMenu();
+            LogService.Info("Print button clicked from FAB menu");
+            await PrintSilent();
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
