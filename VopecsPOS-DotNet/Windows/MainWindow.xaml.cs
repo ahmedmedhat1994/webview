@@ -25,6 +25,10 @@ namespace VopecsPOS.Windows
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             LogService.Info("MainWindow Window_Loaded called");
+
+            // Check for updates in background
+            _ = CheckForUpdatesAsync();
+
             try
             {
                 // Initialize WebView2
@@ -349,6 +353,30 @@ namespace VopecsPOS.Windows
             _isFabExpanded = false;
             FabMenu.Visibility = Visibility.Collapsed;
             FabButton.Content = "☰";
+        }
+
+        private async System.Threading.Tasks.Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                var updateInfo = await UpdateService.CheckForUpdatesAsync();
+
+                if (updateInfo.IsUpdateAvailable)
+                {
+                    LogService.Info($"Update available: {updateInfo.LatestVersion}");
+
+                    // Show update dialog on UI thread
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        var dialog = new UpdateDialog(updateInfo);
+                        dialog.ShowDialog();
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Error checking for updates", ex);
+            }
         }
     }
 }
