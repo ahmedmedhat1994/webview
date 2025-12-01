@@ -55,6 +55,24 @@ namespace VopecsPOS.Windows
                 // Handle messages from JavaScript (for silent printing)
                 WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
 
+                // Inject print interception script BEFORE any page scripts run
+                await WebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(@"
+                    (function() {
+                        // Override window.print immediately before any other scripts
+                        const originalPrint = window.print.bind(window);
+                        window.print = function() {
+                            console.log('VopecsPOS: window.print() intercepted!');
+                            if (window.chrome && window.chrome.webview) {
+                                window.chrome.webview.postMessage({type: 'print'});
+                            } else {
+                                originalPrint();
+                            }
+                        };
+                        console.log('VopecsPOS: Print interception installed at document creation');
+                    })();
+                ");
+                LogService.Info("Print interception script added to document creation");
+
                 LogService.Info("WebView2 events attached");
 
                 // Load the saved URL
