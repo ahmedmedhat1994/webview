@@ -82,6 +82,16 @@ namespace VopecsPOS.Services
             }
         }
 
+        public string PaperSize
+        {
+            get => _settings.PaperSize ?? "80mm";
+            set
+            {
+                _settings.PaperSize = value;
+                SaveSettings();
+            }
+        }
+
         public string GetUrlToLoad()
         {
             return LastVisitedUrl ?? SavedUrl ?? string.Empty;
@@ -130,5 +140,6 @@ namespace VopecsPOS.Services
         public string? LastVisitedUrl { get; set; }
         public string? Language { get; set; }
         public int PrintScale { get; set; } = 80;
+        public string? PaperSize { get; set; } = "80mm";
     }
 }

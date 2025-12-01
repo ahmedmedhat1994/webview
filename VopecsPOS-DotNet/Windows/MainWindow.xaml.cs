@@ -130,80 +130,36 @@ namespace VopecsPOS.Windows
 
         private async System.Threading.Tasks.Task PrintSilent()
         {
+            string? imagePath = null;
             try
             {
                 var scale = _settings.PrintScale;
-                LogService.Info($"Starting silent print with scale {scale}%...");
+                var paperSize = _settings.PaperSize;
+                LogService.Info($"Starting silent print with paper={paperSize}, scale={scale}%...");
 
-                // Create print settings
-                var printSettings = WebView.CoreWebView2.Environment.CreatePrintSettings();
-                printSettings.ShouldPrintBackgrounds = true;
-                printSettings.ShouldPrintHeaderAndFooter = false;
-                printSettings.ShouldPrintSelectionOnly = false;
+                // Capture WebView content as image
+                imagePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"VopecsPOS_Print_{DateTime.Now:yyyyMMddHHmmss}.png");
 
-                // Set margins to minimum
-                printSettings.MarginTop = 0;
-                printSettings.MarginBottom = 0;
-                printSettings.MarginLeft = 0;
-                printSettings.MarginRight = 0;
-
-                // Use scale from settings (convert percentage to decimal)
-                double scaleFactor = (double)scale / 100.0;
-                printSettings.ScaleFactor = scaleFactor;
-                LogService.Info($"Scale factor set to: {scaleFactor}");
-
-                // Generate PDF first
-                var pdfPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"VopecsPOS_Print_{DateTime.Now:yyyyMMddHHmmss}.pdf");
-                LogService.Info($"Generating PDF: {pdfPath}");
-
-                var pdfResult = await WebView.CoreWebView2.PrintToPdfAsync(pdfPath, printSettings);
-
-                if (pdfResult)
+                using (var stream = new System.IO.FileStream(imagePath, System.IO.FileMode.Create))
                 {
-                    LogService.Info("PDF generated successfully, sending to printer...");
+                    await WebView.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
+                }
 
-                    // Get default printer name
-                    var defaultPrinter = new System.Drawing.Printing.PrinterSettings().PrinterName;
-                    LogService.Info($"Default printer: {defaultPrinter}");
+                LogService.Info($"Screenshot captured: {imagePath}");
 
-                    // Print PDF silently using printto verb with specific printer
-                    var startInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = pdfPath,
-                        Verb = "printto",
-                        Arguments = $"\"{defaultPrinter}\"",
-                        UseShellExecute = true,
-                        CreateNoWindow = true,
-                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
-                    };
+                // Use PrintService for direct printing
+                var printService = new PrintService();
+                var scaleDecimal = (double)scale / 100.0;
 
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
-                    {
-                        if (process != null)
-                        {
-                            // Wait for print to complete (max 30 seconds)
-                            process.WaitForExit(30000);
-                        }
-                    }
+                var result = await printService.PrintImageAsync(imagePath, paperSize, scaleDecimal);
 
-                    // Wait a bit more then delete temp PDF
-                    await System.Threading.Tasks.Task.Delay(2000);
-                    try
-                    {
-                        if (System.IO.File.Exists(pdfPath))
-                        {
-                            System.IO.File.Delete(pdfPath);
-                            LogService.Info("Temp PDF deleted");
-                        }
-                    }
-                    catch { }
-
-                    LogService.Info("Silent print completed");
+                if (result)
+                {
+                    LogService.Info("Silent print completed successfully");
                 }
                 else
                 {
-                    LogService.Warning("Failed to generate PDF");
-                    // Fallback to regular print
+                    LogService.Warning("PrintService failed, trying fallback...");
                     WebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
                 }
             }
@@ -218,6 +174,20 @@ namespace VopecsPOS.Windows
                 catch
                 {
                     // Ignore fallback errors
+                }
+            }
+            finally
+            {
+                // Clean up temp file
+                if (imagePath != null && System.IO.File.Exists(imagePath))
+                {
+                    try
+                    {
+                        await System.Threading.Tasks.Task.Delay(1000);
+                        System.IO.File.Delete(imagePath);
+                        LogService.Info("Temp image deleted");
+                    }
+                    catch { }
                 }
             }
         }
@@ -418,14 +388,16 @@ namespace VopecsPOS.Windows
 
             var currentUrl = _settings.SavedUrl ?? "https://";
             var currentScale = _settings.PrintScale;
-            var dialog = new SettingsDialog(currentUrl, currentScale);
+            var currentPaperSize = _settings.PaperSize;
+            var dialog = new SettingsDialog(currentUrl, currentScale, currentPaperSize);
             dialog.Owner = this;
 
             if (dialog.ShowDialog() == true)
             {
-                // Save print scale
+                // Save print settings
                 _settings.PrintScale = dialog.NewPrintScale;
-                LogService.Info($"Print scale set to: {dialog.NewPrintScale}%");
+                _settings.PaperSize = dialog.NewPaperSize;
+                LogService.Info($"Print settings: scale={dialog.NewPrintScale}%, paper={dialog.NewPaperSize}");
 
                 // Save and navigate to URL if changed
                 if (!string.IsNullOrEmpty(dialog.NewUrl) && dialog.NewUrl != currentUrl)

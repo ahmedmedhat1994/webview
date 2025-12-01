@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using VopecsPOS.Services;
 
 namespace VopecsPOS.Windows
@@ -8,13 +9,25 @@ namespace VopecsPOS.Windows
     {
         public string? NewUrl { get; private set; }
         public int NewPrintScale { get; private set; }
+        public string NewPaperSize { get; private set; } = "80mm";
 
-        public SettingsDialog(string currentUrl, int currentPrintScale)
+        public SettingsDialog(string currentUrl, int currentPrintScale, string currentPaperSize)
         {
             InitializeComponent();
             UrlTextBox.Text = currentUrl;
             ScaleSlider.Value = currentPrintScale;
             ScaleValueText.Text = $"{currentPrintScale}%";
+
+            // Set paper size selection
+            foreach (ComboBoxItem item in PaperSizeCombo.Items)
+            {
+                if (item.Tag?.ToString() == currentPaperSize)
+                {
+                    PaperSizeCombo.SelectedItem = item;
+                    break;
+                }
+            }
+
             UrlTextBox.Focus();
             UrlTextBox.SelectAll();
         }
@@ -38,6 +51,13 @@ namespace VopecsPOS.Windows
 
             NewUrl = url;
             NewPrintScale = (int)ScaleSlider.Value;
+
+            // Get paper size from selected item
+            if (PaperSizeCombo.SelectedItem is ComboBoxItem selectedItem)
+            {
+                NewPaperSize = selectedItem.Tag?.ToString() ?? "80mm";
+            }
+
             DialogResult = true;
             Close();
         }
