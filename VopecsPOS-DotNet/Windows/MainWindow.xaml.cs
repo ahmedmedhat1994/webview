@@ -328,18 +328,19 @@ namespace VopecsPOS.Windows
         {
             CloseFabMenu();
 
-            var result = MessageBox.Show(
-                "Do you want to change the system URL?\n\nThis will restart the application.",
-                "Settings",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            var currentUrl = _settings.SavedUrl ?? "https://";
+            var dialog = new SettingsDialog(currentUrl);
+            dialog.Owner = this;
 
-            if (result == MessageBoxResult.Yes)
+            if (dialog.ShowDialog() == true && !string.IsNullOrEmpty(dialog.NewUrl))
             {
-                _settings.ClearAll();
-                var setupWindow = new SetupWindow();
-                setupWindow.Show();
-                Close();
+                LogService.Info($"Changing URL to: {dialog.NewUrl}");
+                _settings.SavedUrl = dialog.NewUrl;
+
+                if (WebView.CoreWebView2 != null)
+                {
+                    WebView.CoreWebView2.Navigate(dialog.NewUrl);
+                }
             }
         }
 

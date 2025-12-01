@@ -1,0 +1,49 @@
+<Window x:Class="VopecsPOS.Windows.SettingsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings"
+        Height="250" Width="450"
+        WindowStartupLocation="CenterOwner"
+        Background="White"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" Text="Change System URL"
+                   FontSize="18" FontWeight="Bold"
+                   Margin="0,0,0,20"/>
+
+        <!-- URL Input -->
+        <StackPanel Grid.Row="1">
+            <TextBlock Text="System URL" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+            <TextBox x:Name="UrlTextBox" FontSize="14" Padding="10"
+                     BorderBrush="#E0E0E0" BorderThickness="1"/>
+        </StackPanel>
+
+        <!-- Error Text -->
+        <TextBlock Grid.Row="2" x:Name="ErrorText" Foreground="Red" FontSize="12"
+                   Margin="0,10,0,0" Visibility="Collapsed" TextWrapping="Wrap"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" Click="CancelButton_Click"
+                    Background="#F5F5F5" Foreground="#333333"
+                    FontSize="13" Padding="20,10"
+                    BorderThickness="1" BorderBrush="#E0E0E0"
+                    Margin="0,0,10,0" Cursor="Hand"/>
+            <Button Content="Save" Click="SaveButton_Click"
+                    Background="#1976D2" Foreground="White"
+                    FontSize="13" FontWeight="SemiBold"
+                    Padding="20,10" BorderThickness="0" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>

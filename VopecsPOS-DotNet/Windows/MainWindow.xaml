@@ -38,6 +38,7 @@
 
         <!-- Floating Action Button - Flutter Style -->
         <StackPanel x:Name="FabPanel"
+                    Panel.ZIndex="9999"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
                     Margin="0,0,16,16">
