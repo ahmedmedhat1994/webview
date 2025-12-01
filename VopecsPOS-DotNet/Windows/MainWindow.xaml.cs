@@ -148,16 +148,63 @@ namespace VopecsPOS.Windows
                 printSettings.MarginRight = 0;
 
                 // Use scale from settings (convert percentage to decimal)
-                printSettings.ScaleFactor = scale / 100.0;
+                double scaleFactor = (double)scale / 100.0;
+                printSettings.ScaleFactor = scaleFactor;
+                LogService.Info($"Scale factor set to: {scaleFactor}");
 
-                // Print silently to default printer
-                var result = await WebView.CoreWebView2.PrintAsync(printSettings);
+                // Generate PDF first
+                var pdfPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"VopecsPOS_Print_{DateTime.Now:yyyyMMddHHmmss}.pdf");
+                LogService.Info($"Generating PDF: {pdfPath}");
 
-                LogService.Info($"Silent print result: {result}");
+                var pdfResult = await WebView.CoreWebView2.PrintToPdfAsync(pdfPath, printSettings);
 
-                if (result != CoreWebView2PrintStatus.Succeeded)
+                if (pdfResult)
                 {
-                    LogService.Warning($"Print may have issues: {result}");
+                    LogService.Info("PDF generated successfully, sending to printer...");
+
+                    // Get default printer name
+                    var defaultPrinter = new System.Drawing.Printing.PrinterSettings().PrinterName;
+                    LogService.Info($"Default printer: {defaultPrinter}");
+
+                    // Print PDF silently using printto verb with specific printer
+                    var startInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = pdfPath,
+                        Verb = "printto",
+                        Arguments = $"\"{defaultPrinter}\"",
+                        UseShellExecute = true,
+                        CreateNoWindow = true,
+                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                    };
+
+                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                    {
+                        if (process != null)
+                        {
+                            // Wait for print to complete (max 30 seconds)
+                            process.WaitForExit(30000);
+                        }
+                    }
+
+                    // Wait a bit more then delete temp PDF
+                    await System.Threading.Tasks.Task.Delay(2000);
+                    try
+                    {
+                        if (System.IO.File.Exists(pdfPath))
+                        {
+                            System.IO.File.Delete(pdfPath);
+                            LogService.Info("Temp PDF deleted");
+                        }
+                    }
+                    catch { }
+
+                    LogService.Info("Silent print completed");
+                }
+                else
+                {
+                    LogService.Warning("Failed to generate PDF");
+                    // Fallback to regular print
+                    WebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
                 }
             }
             catch (Exception ex)
@@ -285,6 +332,13 @@ namespace VopecsPOS.Windows
             WindowState = WindowState.Normal;
             WindowState = WindowState.Maximized;
             Topmost = true;
+
+            // Re-open FAB popup after fullscreen
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                FabPopup.IsOpen = false;
+                FabPopup.IsOpen = true;
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
         }
 
         private void ExitFullScreen()
@@ -297,6 +351,13 @@ namespace VopecsPOS.Windows
             Topmost = false;
             WindowStyle = _previousWindowStyle;
             WindowState = _previousWindowState;
+
+            // Re-open FAB popup after exiting fullscreen
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                FabPopup.IsOpen = false;
+                FabPopup.IsOpen = true;
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
         }
 
         private void Window_LocationChanged(object? sender, EventArgs e)
