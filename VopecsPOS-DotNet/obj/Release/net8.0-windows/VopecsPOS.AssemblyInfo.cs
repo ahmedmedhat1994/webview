@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Vopecs Point of Sale Application")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.6.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.6.0+1a7523ebcdc7a0574876d92430f0d22ae6bf922a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.6.0+b434efe1d3d9099e0bf0f5f184a107ddf3e33d47")]
 [assembly: System.Reflection.AssemblyProductAttribute("Vopecs POS")]
 [assembly: System.Reflection.AssemblyTitleAttribute("VopecsPOS")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.6.0.0")]

@@ -284,7 +284,7 @@
   },
   "projectFileDependencyGroups": {
     "net8.0-windows7.0": [
-      "Microsoft.Web.WebView2 >= 1.0.2950.48",
+      "Microsoft.Web.WebView2 >= 1.0.2957.106",
       "Newtonsoft.Json >= 13.0.3",
       "System.Drawing.Common >= 8.0.0"
     ]
@@ -334,7 +334,7 @@
         "dependencies": {
           "Microsoft.Web.WebView2": {
             "target": "Package",
-            "version": "[1.0.2950.48, )"
+            "version": "[1.0.2957.106, )"
           },
           "Newtonsoft.Json": {
             "target": "Package",
@@ -385,17 +385,5 @@
         "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.202/PortableRuntimeIdentifierGraph.json"
       }
     }
-  },
-  "logs": [
-    {
-      "code": "NU1603",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "VopecsPOS depends on Microsoft.Web.WebView2 (>= 1.0.2950.48) but Microsoft.Web.WebView2 1.0.2950.48 was not found. Microsoft.Web.WebView2 1.0.2957.106 was resolved instead.",
-      "libraryId": "Microsoft.Web.WebView2",
-      "targetGraphs": [
-        "net8.0-windows7.0"
-      ]
-    }
-  ]
+  }
 }

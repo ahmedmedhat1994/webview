@@ -46,7 +46,7 @@
           "dependencies": {
             "Microsoft.Web.WebView2": {
               "target": "Package",
-              "version": "[1.0.2950.48, )"
+              "version": "[1.0.2957.106, )"
             },
             "Newtonsoft.Json": {
               "target": "Package",

@@ -111,6 +111,10 @@ namespace VopecsPOS.Windows
             }
         }
 
+        private string? _pendingPrintHtml = null;
+        private string? _returnUrl = null;
+        private bool _isPrintNavigation = false;
+
         private async void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             try
@@ -120,12 +124,60 @@ namespace VopecsPOS.Windows
 
                 if (message.Contains("\"type\":\"print\""))
                 {
-                    await PrintSilent();
+                    // Check if HTML content is included
+                    if (message.Contains("\"html\":"))
+                    {
+                        // Parse HTML from message
+                        var json = Newtonsoft.Json.Linq.JObject.Parse(message);
+                        var html = json["html"]?.ToString();
+
+                        if (!string.IsNullOrEmpty(html))
+                        {
+                            LogService.Info("Print with HTML content received");
+                            await PrintHtmlContent(html);
+                        }
+                        else
+                        {
+                            LogService.Warning("HTML content is empty, printing current page");
+                            await PrintSilent();
+                        }
+                    }
+                    else
+                    {
+                        // No HTML, print current page
+                        await PrintSilent();
+                    }
                 }
             }
             catch (Exception ex)
             {
                 LogService.Error("Error handling web message", ex);
+            }
+        }
+
+        private async System.Threading.Tasks.Task PrintHtmlContent(string html)
+        {
+            try
+            {
+                LogService.Info("Starting HTML print...");
+
+                // Store current URL to return to after printing
+                _returnUrl = WebView.CoreWebView2.Source;
+                _pendingPrintHtml = html;
+                _isPrintNavigation = true;
+
+                LogService.Info($"Current URL saved: {_returnUrl}");
+
+                // Navigate to HTML content
+                WebView.CoreWebView2.NavigateToString(html);
+
+                // The actual print will happen in NavigationCompleted when _isPrintNavigation is true
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("PrintHtmlContent error", ex);
+                _isPrintNavigation = false;
+                _pendingPrintHtml = null;
             }
         }
 
@@ -229,18 +281,42 @@ namespace VopecsPOS.Windows
         private async void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
             LogService.Info($"Navigation completed. Success: {e.IsSuccess}");
+
+            // Handle print navigation
+            if (_isPrintNavigation && e.IsSuccess)
+            {
+                LogService.Info("Print navigation completed, starting print...");
+                _isPrintNavigation = false;
+
+                // Small delay to ensure content is rendered
+                await System.Threading.Tasks.Task.Delay(300);
+
+                // Print the HTML content
+                await PrintSilent();
+
+                // Navigate back to original URL
+                if (!string.IsNullOrEmpty(_returnUrl))
+                {
+                    LogService.Info($"Returning to: {_returnUrl}");
+                    WebView.CoreWebView2.Navigate(_returnUrl);
+                    _returnUrl = null;
+                }
+
+                _pendingPrintHtml = null;
+                return;
+            }
+
             LoadingOverlay.Visibility = Visibility.Collapsed;
 
             if (e.IsSuccess)
             {
-                // Save last visited URL
-                if (WebView.CoreWebView2.Source != null)
+                // Save last visited URL (skip for print navigations)
+                if (WebView.CoreWebView2.Source != null && !WebView.CoreWebView2.Source.StartsWith("data:"))
                 {
                     _settings.LastVisitedUrl = WebView.CoreWebView2.Source;
                 }
 
                 // Inject JavaScript for touch scrolling fix only
-                // Print interception is now handled by WebView2 PrintRequested event
                 try
                 {
                     await WebView.CoreWebView2.ExecuteScriptAsync(@"
