@@ -59,6 +59,11 @@ namespace VopecsPOS.Windows
                 // Inject iframe print interception script BEFORE any page scripts run
                 await WebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(@"
                     (function() {
+                        // Mark this as VopecsPOS app for server-side detection
+                        window.isVopecsPOS = true;
+                        window.VopecsPOSVersion = '1.7.0';
+                        console.log('VopecsPOS: App detected, modal will be skipped');
+
                         // Function to send print message with HTML content
                         const sendPrintMessage = (html) => {
                             if (window.chrome && window.chrome.webview) {
